@@ -9,6 +9,8 @@
 	
 SDS011 	==>   #define CHOIX_CAPTEUR_PARTICULE		(1U) 
 PMS7003 ==>	  #define CHOIX_CAPTEUR_PARTICULE		(2U)
+
+Pas de capteur ==> #define CHOIX_CAPTEUR_PARTICULE		(0U)
 ----------------------------------------------*/
 
 #define CHOIX_CAPTEUR_PARTICULE		(1U)
@@ -21,6 +23,8 @@ Choisir entre le capteur de humidité/temperature
 
 DHT22 	==>	  #define CHOIX_CAPTEUR_HT				(1U)
 BME280	==>   #define CHOIX_CAPTEUR_HT				(2U)
+
+Pas de capteur ==> #define CHOIX_CAPTEUR_HT		(0U)
 ----------------------------------------------*/
 
 #define CHOIX_CAPTEUR_HT			(1U)
@@ -31,11 +35,10 @@ BME280	==>   #define CHOIX_CAPTEUR_HT				(2U)
 		!! Temps en seconde !!
 ----------------------------------------------*/
 	
-#define PERIOD_LORA			(60U)//15 à min
-#define PERIOD_PARTICULE	(60U)
-#define PERIOD_HT			(60U)
+#define PERIOD_LORA			(60U)//900 secondes minimum
+#define PERIOD_PARTICULE	(60U)//60 secondes minimum
+#define PERIOD_HT			(60U)//60 secondes minimum
 
 #endif /* CHOIX_CONFIG_H */
 
 //luftdaten.info
-/* 1 info toutes les 15 minutes */

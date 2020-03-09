@@ -60,13 +60,21 @@ static char _recv_stack[THREAD_STACKSIZE_DEFAULT];
 static kernel_pid_t sender_pid;
 static char sender_stack[THREAD_STACKSIZE_MAIN / 2];
 
+#if CHOIX_CAPTEUR_PARTICULE == 0
+//Pas de capteur de particule
+#else
 #define PARTICULE_MSG_QUEUE                   (4U)
 static kernel_pid_t particule_pid;
 static char particule_stack[THREAD_STACKSIZE_DEFAULT];
+#endif
 
+#if CHOIX_CAPTEUR_HT == 0
+//Pas de capteur de temperature/humidite
+#else
 #define HT_MSG_QUEUE                   (4U)
 static kernel_pid_t ht_pid;
 static char ht_stack[THREAD_STACKSIZE_DEFAULT];
+#endif
 
 /* Messages are sent every 1000s to respect the duty cycle on each channel */
 //#define PERIOD              (120U)
@@ -83,12 +91,16 @@ static uint8_t appkey[LORAMAC_APPKEY_LEN];
 static sds011_t dev_sds011;
 #elif CHOIX_CAPTEUR_PARTICULE == 2
 static pms7003_t dev_pms7003;
+#elif CHOIX_CAPTEUR_PARTICULE == 0
+//Pas de capteur de particule
 #endif
 
 #if CHOIX_CAPTEUR_HT == 1
 static dht_t dev_dht;
 #elif CHOIX_CAPTEUR_HT == 2
 
+#elif CHOIX_CAPTEUR_HT == 0
+//Pas de capteur de temperature/humidite
 #endif
 
 static cayenne_lpp_t lpp;
@@ -136,8 +148,18 @@ static void _prepare_next_alarm(void);
 static void _send_message(void);
 static void *sender(void *arg);
 static void *_recv(void *arg);
+
+#if CHOIX_CAPTEUR_PARTICULE == 0
+//Pas de capteur de particule
+#else
 static void *_particule(void *arg);
+#endif
+
+#if CHOIX_CAPTEUR_HT == 0
+//Pas de capteur de temperature/humidite
+#else
 static void *_ht(void *arg);
+#endif
 
 /**************************************************************************************/
 
@@ -174,6 +196,8 @@ int main(void)
     }
     #elif CHOIX_CAPTEUR_HT == 2 /* Initialize BME280 */
    	
+   	#elif CHOIX_CAPTEUR_HT == 0
+   	//Pas de capteur de temperature/humidite
     #else /* ERROR */
     	puts("[ERROR] : Choix capteur HT ==> main");
     	return -1;
@@ -195,6 +219,8 @@ int main(void)
    		puts("PMS7003 : init [ERROR]");
    		return -1;
    	}
+   	#elif CHOIX_CAPTEUR_PARTICULE == 0
+   	//Pas de capteur de particule
     #else /* ERROR */
     	puts("[ERROR] : Choix capteur particule ==> main");
     	return -1;
@@ -232,17 +258,34 @@ int main(void)
 
     /* start the sender thread */
     sender_pid = thread_create(sender_stack, sizeof(sender_stack),THREAD_PRIORITY_MAIN - 1, 0, sender, NULL, "sender");
-        
+ 	
+ 	#if CHOIX_CAPTEUR_PARTICULE == 0
+ 	//Pas de capteur de particule
+ 	#else 
     /* start the particule thread */
     particule_pid = thread_create(particule_stack, sizeof(particule_stack),THREAD_PRIORITY_MAIN - 1, 0, _particule, NULL, "capteur_particule");
+    #endif
     
+    #if CHOIX_CAPTEUR_HT == 0
+    //Pas de capteur de temperature/humidite
+    #else
     /* start the ht thread */
     ht_pid = thread_create(ht_stack, sizeof(ht_stack),THREAD_PRIORITY_MAIN - 1, 0, _ht, NULL, "capteur_ht");
+    #endif
 
     /* trigger the first send */
     msg_t msg;
+    #if CHOIX_CAPTEUR_PARTICULE == 0
+ 	//Pas de capteur de particule
+    #else
     msg_send(&msg, particule_pid);//Envoi un message au thread particule
+    #endif
+    
+    #if CHOIX_CAPTEUR_HT == 0
+    //Pas de capteur de temperature/humidite
+    #else
     msg_send(&msg, ht_pid);//Envoi un message au thread ht
+    #endif
     
     return 0;
 }
@@ -492,18 +535,35 @@ static void rtc_cb(void *arg)
     {
     	cnt_particule_PERIOD=0;
     	cnt_ht_PERIOD=0;
-    	msg_send(&msg, particule_pid); //Active le thread correspondant au pid
+    	#if CHOIX_CAPTEUR_PARTICULE == 0
+        //Pas de capteur de particule
+        #else
+        msg_send(&msg, particule_pid); //Active le thread correspondant au pid
+        #endif
+        
+        #if CHOIX_CAPTEUR_HT == 0
+    	//Pas de capteur de temperature/humidite
+    	#else
     	msg_send(&msg, ht_pid); //Active le thread correspondant au pid
+    	#endif
     }
     else if(cnt_particule_PERIOD >= particule_PERIOD)
     {
     	cnt_particule_PERIOD=0;
-    	msg_send(&msg, particule_pid); //Active le thread correspondant au pid
+    	#if CHOIX_CAPTEUR_PARTICULE == 0
+        //Pas de capteur de particule
+        #else
+        msg_send(&msg, particule_pid); //Active le thread correspondant au pid
+        #endif
     }
     else if(cnt_ht_PERIOD >= ht_PERIOD)
     {
     	cnt_ht_PERIOD=0;
+    	#if CHOIX_CAPTEUR_HT == 0
+    	//Pas de capteur de temperature/humidite
+    	#else
     	msg_send(&msg, ht_pid); //Active le thread correspondant au pid
+    	#endif
     }
     else
     {
@@ -538,6 +598,14 @@ static void _prepare_next_alarm(void)
     {
     	PERIOD=ht_PERIOD;
     }
+    #if CHOIX_CAPTEUR_PARTICULE == 0
+    	PERIOD=ht_PERIOD;
+    #elif CHOIX_CAPTEUR_HT == 0
+    	PERIOD=particule_PERIOD;
+    #elif ((CHOIX_CAPTEUR_PARTICULE == 0)&&(CHOIX_CAPTEUR_HT == 0))
+    	puts("[ERROR] : Aucun capteur\n");
+    	return;
+    #endif
     time.tm_sec += PERIOD;
     mktime(&time);
     rtc_set_alarm(&time, rtc_cb, NULL);
@@ -579,13 +647,21 @@ static void *sender(void *arg)
         //Reset le lpp.buffer 
         cayenne_lpp_reset(&lpp);
         
+        #if CHOIX_CAPTEUR_PARTICULE == 0
+        #else
         //add dans lpp.buffer les valeurs retourné par le capteur 
      	cayenne_lpp_add_analog_input(&lpp,1,tot_pm2_5/cnt_particule); // Pour Value sur cayenne
     	//cayenne_lpp_add_analog_input(&lpp,2,tot_pm2_5/cnt_particule); // Pour Graph sur Cayenne
     	cayenne_lpp_add_analog_input(&lpp,3,tot_pm10/cnt_particule); // Pour Value sur cayenne
    	 	//cayenne_lpp_add_analog_input(&lpp,4,tot_pm10/cnt_particule); // Pour Graph sur cayenne   
+   	 	#endif
+   	 	
+   	 	#if CHOIX_CAPTEUR_HT == 0
+   	 	#else
      	cayenne_lpp_add_temperature(&lpp,5,tot_temp/cnt_ht); //Affichage Temperature
     	cayenne_lpp_add_relative_humidity(&lpp,6,tot_hum/cnt_ht);// Humidite
+    	#endif
+    	
     	#if CHOIX_CAPTEUR_PARTICULE == 2
     	cayenne_lpp_add_analog_input(&lpp,7,tot_pm1/cnt_particule); // Pour Value sur cayenne
    	 	//cayenne_lpp_add_analog_input(&lpp,8,tot_pm1/cnt_particule); // Pour Graph sur cayenne
@@ -607,8 +683,17 @@ static void *sender(void *arg)
         puts("[SEND]");
         _send_message();
         
-       	msg_send(&msg, particule_pid); //Active le thread correspondant au pid
+        #if CHOIX_CAPTEUR_PARTICULE == 0
+        //Pas de capteur de particule
+        #else
+        msg_send(&msg, particule_pid); //Active le thread correspondant au pid
+        #endif
+        
+        #if CHOIX_CAPTEUR_HT == 0
+    	//Pas de capteur de temperature/humidite
+    	#else
     	msg_send(&msg, ht_pid); //Active le thread correspondant au pid
+    	#endif
 		
 		/* Schedule the next wake-up alarm */
         _prepare_next_alarm();
@@ -691,6 +776,9 @@ static void *_recv(void *arg)
     return NULL;
 }
 
+#if CHOIX_CAPTEUR_PARTICULE == 0
+//Pas de capteur de particule
+#else
 static void *_particule(void *arg)
 {
 	/* Thread gérant le capteur particule (SDS011 ou PMS7003)
@@ -710,6 +798,8 @@ static void *_particule(void *arg)
      	Traitement_SDS011();
     #elif CHOIX_CAPTEUR_PARTICULE == 2
      	Traitement_PMS7003();
+    #elif CHOIX_CAPTEUR_PARTICULE == 0
+    //Pas de capteur de particule
     #else
      	puts("[ERROR] : choix capteur function ==> _particule");
      	return;
@@ -733,7 +823,11 @@ static void *_particule(void *arg)
     /* this should never be reached */
     return NULL;
 }
+#endif
 
+#if CHOIX_CAPTEUR_HT == 0
+//Pas de capteur de temperature/humidite
+#else
 static void *_ht(void *arg)
 {
 	/* Thread gérant le capteur humidite/temperature (DHT22 ou BME280)
@@ -753,6 +847,8 @@ static void *_ht(void *arg)
      	Traitement_DHT22();
 	#elif CHOIX_CAPTEUR_HT == 2
 	
+	#elif CHOIX_CAPTEUR_HT == 0
+	//Pas de capteur de temperature/humidite
 	#else
 		puts("[ERROR] : choix capteur function ==> _ht");
      	return;
@@ -773,3 +869,4 @@ static void *_ht(void *arg)
     /* this should never be reached */
     return NULL;
 }
+#endif
