@@ -30,13 +30,14 @@
 //Capteur particule 
 #include "sds011.h"
 #include "sds011_params.h"
-
 #include "pms7003.h"
 #include "pms7003_params.h"
 
 //Capteur temperature et humidité
 #include "dht.h" 
 #include "dht_params.h"
+#include "bmx280.h"
+#include "bmx280_params.h"
 
 #include "msg.h"
 #include "thread.h"
@@ -98,7 +99,7 @@ static pms7003_t dev_pms7003;
 #if CHOIX_CAPTEUR_HT == 1
 static dht_t dev_dht;
 #elif CHOIX_CAPTEUR_HT == 2
-
+static bmx280_t dev_bme;
 #elif CHOIX_CAPTEUR_HT == 0
 //Pas de capteur de temperature/humidite
 #endif
@@ -122,7 +123,7 @@ float tot_hum=0.00; //Stock la somme des mesures pour l'humidité
 float tot_pm2_5=0.00; //Stock la somme des mesures pour pm2.5
 float tot_pm10=0.00; //Stock la somme des mesures pour pm10
 #if CHOIX_CAPTEUR_PARTICULE == 2
-float tot_pm1=0.00;
+float tot_pm1=0.00; //Stock la somme des mesures pour pm1, uniquement pour le pms7003
 #endif
 
 /*********************************** Prototype ****************************************/
@@ -140,7 +141,7 @@ void measure_cb_pm_standard(pms7003_data_t *data, void *ctx);
 #if CHOIX_CAPTEUR_HT == 1
 static void Traitement_DHT22(void);
 #elif CHOIX_CAPTEUR_HT == 2
-
+static void Traitement_BME280(void);
 #endif
 
 static void rtc_cb(void *arg);
@@ -166,6 +167,8 @@ static void *_ht(void *arg);
 int main(void)
 {   
     /********************************* PINMAP ******************************/
+    //	Tout les capteurs sont reliés au 5V / GND
+    //	
     //		SDS011
   	//				TX = D2
     //				RX = D8
@@ -177,6 +180,10 @@ int main(void)
     //   
     //		DHT22:
     //				DATA = D4
+    //
+    //		BME280: 
+    //				SDI = D14
+    //				SCK = D15
     //
     //		Alim panneau solaire:
     //
@@ -195,7 +202,20 @@ int main(void)
         return -1;
     }
     #elif CHOIX_CAPTEUR_HT == 2 /* Initialize BME280 */
-   	
+   	switch (bmx280_init(&dev_bme, &bmx280_params[0])) 
+   	{
+        case BMX280_ERR_BUS:
+            puts("BME280 : init [Error] Something went wrong when using the I2C bus");
+        return 1;
+        
+        case BMX280_ERR_NODEV:
+            puts("BME280 : init [Error] Unable to communicate with any BMX280 device");
+        return 1;
+        
+        default: /* all good -> do nothing */
+            puts("BME280 : init [OK]");
+        break;
+    }
    	#elif CHOIX_CAPTEUR_HT == 0
    	//Pas de capteur de temperature/humidite
     #else /* ERROR */
@@ -506,7 +526,36 @@ static void Traitement_DHT22(void)
     /**********************************************************/
 }
 #elif CHOIX_CAPTEUR_HT == 2
+static void Traitement_BME280(void)
+{
+	/* Fonction récupèrant les valeur de temperature et d'humidité du capteur BME280
+	* et les retourne dans les variables globales tot_temp et tot_hum  
+	*/
 
+
+	/* read temperature, pressure [and humidity] values */
+    float temperature = bmx280_read_temperature(&dev_bme);
+    uint32_t pressure = bmx280_read_pressure(&dev_bme);
+    #if defined(MODULE_BME280_SPI) || defined(MODULE_BME280_I2C)
+    float humidity = bme280_read_humidity(&dev_bme);
+    tot_hum+=(humidity/100.00);
+    #endif
+	tot_temp+=(temperature/100.00);// Divisé par 10 pour avoir un chiffre à virgule
+	
+	/***************** Affichage (optionnel) ******************/
+    char str_temp[8];
+    size_t len = fmt_s16_dfp(str_temp, temperature, -2);
+    str_temp[len] = '\0';
+	#if defined(MODULE_BME280_SPI) || defined(MODULE_BME280_I2C)
+    char str_hum[8];
+    len = fmt_s16_dfp(str_hum, humidity, -2);
+    str_hum[len] = '\0';
+    #endif
+    
+    printf("\n==> temp: %s°C | humidity: %s%%\n",str_temp,str_hum);
+    printf("==> Pressure [Pa]: %ld PRIu32\n", pressure);
+    /**********************************************************/
+}
 #endif
 
 static void rtc_cb(void *arg)
@@ -648,25 +697,30 @@ static void *sender(void *arg)
         cayenne_lpp_reset(&lpp);
         
         #if CHOIX_CAPTEUR_PARTICULE == 0
+        //Pas de capteur de particule
         #else
         //add dans lpp.buffer les valeurs retourné par le capteur 
-     	cayenne_lpp_add_analog_input(&lpp,1,tot_pm2_5/cnt_particule); // Pour Value sur cayenne
-    	//cayenne_lpp_add_analog_input(&lpp,2,tot_pm2_5/cnt_particule); // Pour Graph sur Cayenne
-    	cayenne_lpp_add_analog_input(&lpp,3,tot_pm10/cnt_particule); // Pour Value sur cayenne
-   	 	//cayenne_lpp_add_analog_input(&lpp,4,tot_pm10/cnt_particule); // Pour Graph sur cayenne   
+     	cayenne_lpp_add_temperature(&lpp,1,tot_pm2_5/cnt_particule); // Pour pm2.5
+    	cayenne_lpp_add_temperature(&lpp,2,tot_pm10/cnt_particule); // Pour pm10   
    	 	#endif
    	 	
    	 	#if CHOIX_CAPTEUR_HT == 0
+   	 	//Pas de capteur de temperature/humidite
    	 	#else
-     	cayenne_lpp_add_temperature(&lpp,5,tot_temp/cnt_ht); //Affichage Temperature
-    	cayenne_lpp_add_relative_humidity(&lpp,6,tot_hum/cnt_ht);// Humidite
+     	cayenne_lpp_add_temperature(&lpp,3,tot_temp/cnt_ht); //Affichage Temperature
+    	cayenne_lpp_add_relative_humidity(&lpp,4,tot_hum/cnt_ht);// Humidite
     	#endif
     	
     	#if CHOIX_CAPTEUR_PARTICULE == 2
-    	cayenne_lpp_add_analog_input(&lpp,7,tot_pm1/cnt_particule); // Pour Value sur cayenne
-   	 	//cayenne_lpp_add_analog_input(&lpp,8,tot_pm1/cnt_particule); // Pour Graph sur cayenne
+    	cayenne_lpp_add_temperature(&lpp,5,tot_pm1/cnt_particule); // Pour pm1
    	 	#endif
-   	 	/* Pour Grafana besoin de 1 seule donnée par pm */
+
+		/*************************** Important *****************************/
+		//	Utilisation de la fonction "cayenne_lpp_add_temperature();"
+		//  car le format est de 2 bytes et 0.1 donc possibilité d'aller
+		//  jusqu'à la valeur 3276.8 car signé et notre valeur max est 1999.9
+		/*******************************************************************/
+
 
 		/* Reset */
 		cnt_ht=0.00;
@@ -727,15 +781,15 @@ static void *_recv(void *arg)
             	break;
             	
             	case 'B'://42
-            		Lora_PERIOD=120;//2 min
+            		Lora_PERIOD=900;//15 min
             	break;
             	
             	case 'C'://43
-            		Lora_PERIOD=300;//5 min
+            		Lora_PERIOD=1200;//20 min
             	break;
             	
             	case 'D'://44
-            		Lora_PERIOD=600;//10 min
+            		Lora_PERIOD=1800;//30 min
             	break;
             	
             	
@@ -751,6 +805,13 @@ static void *_recv(void *arg)
             		particule_PERIOD=300;
             	break;
             	
+            	case 'T'://54
+            		particule_PERIOD=900;
+            	break;
+            	
+            	case 'U'://55
+            		particule_PERIOD=1200;
+            	break;
             	
             	case 'a'://61
             		ht_PERIOD=60;
@@ -764,11 +825,18 @@ static void *_recv(void *arg)
             		ht_PERIOD=300;
             	break;
             	
+            	case 'd'://64
+            		particule_PERIOD=900;
+            	break;
+            	
+            	case 'e'://65
+            		particule_PERIOD=1200;
+            	break;
             	
             	default:
-            		Lora_PERIOD=600;//par defaut 10 min
-            		particule_PERIOD=120;//par defaut 2 min
-            		ht_PERIOD=60;//par defaut 1 min
+            		Lora_PERIOD=900;//par defaut 15 min
+            		particule_PERIOD=600;//par defaut 2 min
+            		ht_PERIOD=900;//par defaut 1 min
             	break;
             }
         }
@@ -798,8 +866,6 @@ static void *_particule(void *arg)
      	Traitement_SDS011();
     #elif CHOIX_CAPTEUR_PARTICULE == 2
      	Traitement_PMS7003();
-    #elif CHOIX_CAPTEUR_PARTICULE == 0
-    //Pas de capteur de particule
     #else
      	puts("[ERROR] : choix capteur function ==> _particule");
      	return;
@@ -846,9 +912,7 @@ static void *_ht(void *arg)
     #if CHOIX_CAPTEUR_HT == 1
      	Traitement_DHT22();
 	#elif CHOIX_CAPTEUR_HT == 2
-	
-	#elif CHOIX_CAPTEUR_HT == 0
-	//Pas de capteur de temperature/humidite
+		Traitement_BME280();
 	#else
 		puts("[ERROR] : choix capteur function ==> _ht");
      	return;

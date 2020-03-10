@@ -13,7 +13,7 @@ PMS7003 ==>	  #define CHOIX_CAPTEUR_PARTICULE		(2U)
 Pas de capteur ==> #define CHOIX_CAPTEUR_PARTICULE		(0U)
 ----------------------------------------------*/
 
-#define CHOIX_CAPTEUR_PARTICULE		(1U)
+#define CHOIX_CAPTEUR_PARTICULE		(2U)
 
 /*---------------------------------------------
 Choisir entre le capteur de humidité/temperature
@@ -27,7 +27,7 @@ BME280	==>   #define CHOIX_CAPTEUR_HT				(2U)
 Pas de capteur ==> #define CHOIX_CAPTEUR_HT		(0U)
 ----------------------------------------------*/
 
-#define CHOIX_CAPTEUR_HT			(1U)
+#define CHOIX_CAPTEUR_HT			(2U)
 
 /*---------------------------------------------
 	Choisir la période de mesure pour les 2 
@@ -41,4 +41,24 @@ Pas de capteur ==> #define CHOIX_CAPTEUR_HT		(0U)
 
 #endif /* CHOIX_CONFIG_H */
 
+/********************************* PINMAP ******************************/
+//	Tout les capteurs sont reliés au 5V / GND
+//	
+//		SDS011
+//				TX = D2
+//				RX = D8
+//
+//		PMS7003:
+//				TX = D2
+//				RX = D8
+//				SET = D7
+//   
+//		DHT22:
+//				DATA = D4
+//
+//		BME280: 
+//				SDI = D14
+//				SCK = D15
+/***********************************************************************/
+    
 //luftdaten.info

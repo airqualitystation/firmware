@@ -27,11 +27,14 @@ USEMODULE += semtech_loramac_rx
 USEMODULE += sds011
 USEMODULE += pms7003
 USEMODULE += dht
+USEMODULE += bme280_i2c
 USEMODULE += xtimer
 
 FEATURES_REQUIRED += periph_rtc
 
 CFLAGS += -DDEVEUI=\"$(DEVEUI)\" -DAPPEUI=\"$(APPEUI)\" -DAPPKEY=\"$(APPKEY)\"
+CFLAGS += -DBMX280_PARAM_I2C_DEV=I2C_DEV\(0\)
+CFLAGS += -DBMX280_PARAM_I2C_ADDR=0x77
 
 # Comment this out to disable code in RIOT that does safety checking
 # which is not needed in a production environment but helps in the
