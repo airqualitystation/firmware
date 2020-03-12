@@ -66,7 +66,7 @@ static char sender_stack[THREAD_STACKSIZE_MAIN / 2];
 #else
 #define PARTICULE_MSG_QUEUE                   (4U)
 static kernel_pid_t particule_pid;
-static char particule_stack[THREAD_STACKSIZE_DEFAULT];
+static char particule_stack[THREAD_STACKSIZE_MAIN];
 #endif
 
 #if CHOIX_CAPTEUR_HT == 0
@@ -234,6 +234,13 @@ int main(void)
     #elif CHOIX_CAPTEUR_PARTICULE == 2 /* Initialize PMS7003 */
    	if(pms7003_init(&dev_pms7003, &pms7003_params[0])>=0){
    		puts("PMS7003 : init [OK]");
+   		// The active mode is better accurate than passive
+		// The active mode need a callback register procedure.
+		// -> If you want use the passive mode, then you need to creat your own RX_CALLBACK and 	attached to the device
+	  	// For more details of the implementation of rx_callback for the passive mode, see <pms7003.c> in the driver folder.
+		// In the passive mode you need to send read_passive command to obtain just one measure...
+		ACTIVE_MODE(&dev_pms7003);
+   		SLEEP_SOFT(&dev_pms7003);
    	}
    	else {
    		puts("PMS7003 : init [ERROR]");
@@ -439,18 +446,11 @@ static void Traitement_PMS7003(void)
 	float moy_pm10=0.00;
 	float moy_pm2_5=0.00;
 	float moy_pm1=0.00;
-	
+
 	// In order to be sure that the device is not sleep 
 	// Soft because we use the uart interface to send cmd at the device
 	// You can use the hardware by connecting the coresponding pin to your board <WAKEUP_HARD>
     WAKEUP_SOFT(&dev_pms7003); 
-
-	// The active mode is better accurate than passive
-	// The active mode need a callback register procedure.
-	// -> If you want use the passive mode, then you need to creat your own RX_CALLBACK and 	attached to the device
-  	// For more details of the implementation of rx_callback for the passive mode, see <pms7003.c> in the driver folder.
-	// In the passive mode you need to send read_passive command to obtain just one measure...
-    ACTIVE_MODE(&dev_pms7003); 
     
 	// Register the corresponding callback <measure_cb_pm_standard> for the measurement.
 	// If you want unregister the callback use this :
@@ -480,9 +480,8 @@ static void Traitement_PMS7003(void)
         moy_pm1+=data.pm_1;//Stock les valeurs de pm10
         //data.concentration_unit_at = msg2.content.value & 0xFFFF;  
     }
-    
     /* unregister callback */
-    pms7003_register_callback(&dev_pms7003,NULL,NULL); 
+    pms7003_register_callback(&dev_pms7003,NULL,NULL);
     
     SLEEP_SOFT(&dev_pms7003); 
          
@@ -835,8 +834,8 @@ static void *_recv(void *arg)
             	
             	default:
             		Lora_PERIOD=900;//par defaut 15 min
-            		particule_PERIOD=600;//par defaut 2 min
-            		ht_PERIOD=900;//par defaut 1 min
+            		particule_PERIOD=600;//par defaut 10 min
+            		ht_PERIOD=900;//par defaut 15 min
             	break;
             }
         }

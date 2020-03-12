@@ -7,13 +7,13 @@
 	
 	exemple :
 	
-SDS011 	==>   #define CHOIX_CAPTEUR_PARTICULE		(1U) 
-PMS7003 ==>	  #define CHOIX_CAPTEUR_PARTICULE		(2U)
+SDS011 	==>   #define CHOIX_CAPTEUR_PARTICULE			(1U) 
+PMS7003 ==>	  #define CHOIX_CAPTEUR_PARTICULE			(2U)
 
 Pas de capteur ==> #define CHOIX_CAPTEUR_PARTICULE		(0U)
 ----------------------------------------------*/
 
-#define CHOIX_CAPTEUR_PARTICULE		(2U)
+#define CHOIX_CAPTEUR_PARTICULE		(1U)
 
 /*---------------------------------------------
 Choisir entre le capteur de humidité/temperature
@@ -21,8 +21,8 @@ Choisir entre le capteur de humidité/temperature
 	
 	exemple :
 
-DHT22 	==>	  #define CHOIX_CAPTEUR_HT				(1U)
-BME280	==>   #define CHOIX_CAPTEUR_HT				(2U)
+DHT22 	==>	  #define CHOIX_CAPTEUR_HT			(1U)
+BME280	==>   #define CHOIX_CAPTEUR_HT			(2U)
 
 Pas de capteur ==> #define CHOIX_CAPTEUR_HT		(0U)
 ----------------------------------------------*/
@@ -62,3 +62,6 @@ Pas de capteur ==> #define CHOIX_CAPTEUR_HT		(0U)
 /***********************************************************************/
     
 //luftdaten.info
+
+//188mA
+//repos 77mA
