@@ -10,10 +10,10 @@ By default UART_DEV(1) and GPIO_PIN(PORT_A, 8) is used.
 
 Below, you've a look at the Arduino pin map available for the b-l072z-lrwan1 board: 
 
-D0  	=>	GPIO_PIN(PORT_A, 3)
-D1 	=>	GPIO_PIN(PORT_A, 2)
-D2	=>	GPIO_PIN(PORT_A, 10)
-D3	=>	GPIO_PIN(PORT_B, 13)
+D0 =>	GPIO_PIN(PORT_A, 3)
+D1 =>	GPIO_PIN(PORT_A, 2)
+D2 =>	GPIO_PIN(PORT_A, 10)
+D3 =>	GPIO_PIN(PORT_B, 13)
 D4	=>	GPIO_PIN(PORT_B, 5)
 D5	=>	GPIO_PIN(PORT_B, 7)
 D6	=>	GPIO_PIN(PORT_B, 2)
