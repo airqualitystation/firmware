@@ -6,7 +6,7 @@ This project contains the RIOT firmware of the Air Quality Station
 * TBC
 
 ## Build and flash the firmware
-* First, you need to clone, or download, the RIOT library(https://github.com/RIOT-OS/RIOT.git)
+* First, you need to clone, or download, [the RIOT library](https://github.com/RIOT-OS/RIOT.git)
 * To build the project, you need to copy the files called "drivers" and "examples" in your RIOT file
 * You need to merge and replace files
 Now, you can compile the Air_quality project in your board with the command: 'make flash' or 'make flash term' if you have pyterm.
