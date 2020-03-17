@@ -3,7 +3,10 @@ This project contains the RIOT firmware of the Air Quality Station
 
 ## Hardware requirements
 * [STM32 Nucleo B-L072Z-LRWAN1](https://www.st.com/en/evaluation-tools/b-l072z-lrwan1.html)
-* TBC
+* [SDS011](https://cdn-reichelt.de/documents/datenblatt/X200/SDS011-DATASHEET.pdf)
+* [PMS7003](https://usermanual.wiki/Document/PMS7003seriesdata20manualEnglishV25.1220636559/view)
+* [DHT22](https://cdn-shop.adafruit.com/datasheets/Digital+humidity+and+temperature+sensor+AM2302.pdf)
+* [BME280](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=2&cad=rja&uact=8&ved=2ahUKEwiUir-s-KHoAhUp4YUKHYPqDQgQFjABegQIBBAB&url=https%3A%2F%2Fcommunity.hiveeyes.org%2Fuploads%2Fdefault%2Foriginal%2F2X%2Fb%2Fbe1babdde4b6413333ac2f381d2e5f83bc54c1a0.pdf&usg=AOvVaw3nxytetpkCvFgiKJwC_b3a)
 
 ## Build and flash the firmware
 * First, you need to clone, or download, [the RIOT library](https://github.com/RIOT-OS/RIOT.git)
