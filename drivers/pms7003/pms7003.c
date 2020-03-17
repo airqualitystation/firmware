@@ -1,5 +1,3 @@
-
-
 #include <string.h>
 
 #include "assert.h"
@@ -15,13 +13,8 @@ uint8_t cmd_active[FRAME_HOST_LEN] = {HEAD1,HEAD2,_MODE, 0x00 ,_ACTIVE, 0x01 , 0
 uint8_t cmd_passive[FRAME_HOST_LEN] = {HEAD1,HEAD2,_MODE, 0x00 ,_PASSIVE, 0x01 , 0x70 };
 uint8_t cmd_read[FRAME_HOST_LEN] = {HEAD1,HEAD2,_READ_PASSIVE, 0x00 ,0x00, 0x01 , 0x71 };
 
-//static kernel_pid_t pid;
-/**
- * @brief             UART receive callback
- *
- * @param[in]   arg   Context value previously handed to the uart_init call
- * @param[in]   data  single byte received over UART
- */
+
+/* Uart receive callback */
 static void rx_cb(void *arg, uint8_t c)
 {
    
@@ -50,7 +43,7 @@ static void rx_cb(void *arg, uint8_t c)
     if(dev->idx == FRAME_LEN-1){
       uint16_t sensor = dev->buf_mem[CHECKSUM_HIGH_IDX ] << 8 | dev->buf_mem[CHECKSUM_LOW_IDX ] ; 
       if ((dev->checksum == sensor)&&(dev->buf_mem[CHECKSUM_HIGH_IDX ]!=0)&&(dev->buf_mem[CHECKSUM_LOW_IDX ]!=0)){
-            //TRAITEMENT
+            //Data
       		pms7003_data_t measure;
 
       		measure.pm_1 =  (dev->buf_mem[STANDARD_PM1_HIGH_IDX] << 8 ) |
@@ -132,47 +125,8 @@ static void rx_cb_cmd(void *arg, uint8_t c)
 
 
 
-/*
-static void rx_cb_passive(void *arg, uint8_t c)
-{
-   
-   	pms7003_t *dev = (pms7003_t *)arg; 
-
-    if(((c != HEAD1 ) && (dev->idx==0)) || (dev->available) ){
-        return;
-    }
-    if(((c != HEAD2 ) && (dev->idx==1)) || (dev->available) ){
-        return;
-    }
 
 
-    dev->buf_mem[dev->idx]=c; 
-    if (dev->idx < FRAME_LEN-2){
-        dev->checksum += c ; 
-    }
-    
-    if(dev->idx == FRAME_LEN-1){
-    	dev->available=true; 
-    	printf("\nok\n");
-      	mutex_unlock(&dev->read_passive);
-      	return;
-   	} 
-
-    dev->idx = dev->idx + 1; 
-}*/
-
-
-
-
-
-
-
-/***************************************
-Note personnelle de dévelopement
-- Si le benchtest ne marche pas, Ecrire une seul fois dans l'UART avant la boucle While.
-et écouter les trames en boucle avant reset des params en fin de boucle
-- Utilisation de Timeout			  
- *************************************/
 
 
 int send_cmd(pms7003_t *dev,working_mode_t cmd_type){
@@ -380,56 +334,7 @@ int ACTIVE_MODE(pms7003_t *dev){
 }
 
 
-int PASSIVE_MODE(pms7003_t *dev){
-   int feedback = send_cmd(dev,PASSIVE);
-   if(feedback>=0){
-   	printf("[PASSIVE SOFT] Ok\n");
-   }else{
-   	printf("[PASSIVE SOFT] Error\n");
-   }
-   return feedback;
-}
 
-/*
-int READ_IN_PASSIVE_MODE(pms7003_t *dev,pms7003_data_t *measure,int nb){
-	if(dev->cmd!=PASSIVE){
-		printf("[READ PASSIVE] Need to be in passive mode before \n");
-		return PMS7003_ERROR;
-	}
-    if(dev->cb != NULL){
-		 if(uart_init(dev->params.uart, PMS7003_UART_BAUDRATE,NULL,NULL) != 0) {
-    		return  PMS7003_UART_OFF_ERROR ;
-    	}
-	}
-	dev->checksum=0;
-    dev->idx=0;
-	dev->available=false;
-	if(uart_init(dev->params.uart, PMS7003_UART_BAUDRATE,rx_cb_passive,dev) != 0) {
-    		return  PMS7003_UART_ON_ERROR ;
-    }
-    for(int i=0;i<nb;i++){
-    	uart_write(dev->params.uart,cmd_read,FRAME_HOST_LEN);
-    	printf("\n écriture \n"); 
-    	mutex_lock(&dev->read_passive);
-   		printf("\n lock \n"); 
-
-    	measure[i].pm_1 =  (dev->buf_mem[STANDARD_PM1_HIGH_IDX] << 8 ) |
-                                     dev->buf_mem[STANDARD_PM1_LOW_IDX] ;
-    	measure[i].pm_2_5 = (dev->buf_mem[STANDARD_PM25_HIGH_IDX] << 8) |
-                                     dev->buf_mem[STANDARD_PM25_LOW_IDX] ;
-    	measure[i].pm_10  = (dev->buf_mem[STANDARD_PM10_HIGH_IDX] << 8) |
-                                     dev->buf_mem[STANDARD_PM10_LOW_IDX] ;
-       
-       	dev->checksum=0;
-       	dev->idx=0;
-        dev->available=false;                     
-    }
-    if(uart_init(dev->params.uart, PMS7003_UART_BAUDRATE,NULL,NULL) != 0) {
-    		return  PMS7003_UART_OFF_ERROR ;
-    }
-    return PMS7003_OK; 
-}
-*/
 
 void wait_second(int tps){
     int periode = tps*US_PER_SEC; 
@@ -440,4 +345,13 @@ void wait_second(int tps){
     }
 }
 
+
+void wait_ms(int tps){
+    int periode = tps*US_PER_MS; 
+    xtimer_ticks32_t time = xtimer_now();
+    xtimer_ticks32_t real=time;
+    while(real.ticks32 <= time.ticks32+periode){
+      real = xtimer_now();
+    }
+}
 

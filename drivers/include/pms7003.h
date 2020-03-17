@@ -32,11 +32,7 @@ typedef enum commandes{
 }working_mode_t;
 
 
-/** @} */
 
-/**
- * @brief   PMS7003 configuration
- */
 typedef struct {
     uart_t   uart;      
     gpio_t   set_pin; 
@@ -95,30 +91,23 @@ typedef struct {
 
 
 int pms7003_init(pms7003_t *dev, const pms7003_params_t *params);
-
-
 int pms7003_register_callback(pms7003_t *dev, pms7003_callback_t cb, void *ctx);
-
-
 void pms7003_set_on(pms7003_t *dev);
-
 void pms7003_set_off(pms7003_t *dev);
-
 int send_cmd(pms7003_t *dev,working_mode_t cmd_type);
 
 void wait_second(int tps);
-int PASSIVE_MODE(pms7003_t *dev);
+void wait_ms(int tps);
 int ACTIVE_MODE(pms7003_t *dev);
 void SLEEP_HARD(pms7003_t *dev);
 int SLEEP_SOFT(pms7003_t *dev);
 void WAKEUP_HARD(pms7003_t *dev);
 int WAKEUP_SOFT(pms7003_t *dev);
-//int READ_IN_PASSIVE_MODE(pms7003_t *dev,pms7003_data_t *measure,int nb);
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* PMS7003_H */
-/** @} */
+#endif 
 

@@ -11,15 +11,12 @@
 extern "C" {
 #endif
 
-/**
- * @name   Set default configuration parameters for the SDS011 driver
- * @{
- */
+
 #ifndef PMS7003_PARAM_UART_DEV
 #define PMS7003_PARAM_UART_DEV       (UART_DEV(1))
 #endif
 #ifndef PMS7003_PARAM_SET_PIN
-#define PMS7003_PARAM_SET_PIN        (GPIO_PIN(PORT_A, 8))  // D7
+#define PMS7003_PARAM_SET_PIN        (GPIO_PIN(PORT_A, 8)) 
 #endif
 #ifndef PMS7003_PARAM_PWR_LEVEL
 #define PMS7003_PARAM_PWR_LEVEL     (true)
@@ -41,20 +38,9 @@ extern "C" {
 
 
 
-
-
-/**
- * @brief   Allocate and configure entries to the SAUL registry
- */
-/*saul_reg_info_t pms7003_saul_info[] =
-{
-    PMS7003_SAUL_INFO
-};
-*/
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* PMS7003_PARAMS_H */
-/** @} */
+#endif 
 

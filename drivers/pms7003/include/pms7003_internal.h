@@ -1,21 +1,4 @@
-/*
- * Copyright (C) 2018 HAW-Hamburg
- *
- * This file is subject to the terms and conditions of the GNU Lesser
- * General Public License v2.1. See the file LICENSE in the top level
- * directory for more details.
- */
 
- /**
-  * @ingroup     drivers_sds011
-  * @{
-  *
-  * @file
-  * @brief       Internal constants etc. for the PMS7003 laser dust sensor
-  *
-  * @author      Michel Rottleuthner <michel.rottleuthner@haw-hamburg.de>
-  * @}
-  */
 #ifndef PMS7003_INTERNAL_H
 #define PMS7003_INTERNAL_H
 
@@ -111,6 +94,4 @@ enum {
 }
 #endif
 
-#endif /* SDS011_INTERNAL_H */
-/** @} */
-
+#endif 
