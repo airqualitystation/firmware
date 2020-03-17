@@ -34,10 +34,12 @@ Pas de capteur ==> #define CHOIX_CAPTEUR_HT		(0U)
 	capteurs et la période d'envoi via Lora
 		!! Temps en seconde !!
 ----------------------------------------------*/
-	
-#define PERIOD_LORA			(60U)//900 secondes minimum
-#define PERIOD_PARTICULE	(60U)//60 secondes minimum
-#define PERIOD_HT			(60U)//60 secondes minimum
+
+// The frequency of transmission of datas	
+#define PERIOD_LORA			(60U)
+// The sensor measurement period
+#define PERIOD_PARTICULE	(60U)
+#define PERIOD_HT			(60U)
 
 #endif /* CHOIX_CONFIG_H */
 
@@ -65,3 +67,9 @@ Pas de capteur ==> #define CHOIX_CAPTEUR_HT		(0U)
 
 //188mA
 //repos 77mA
+
+/* Grafana
+Port: 8086
+
+Juste pourcentage de la batterie
+*/

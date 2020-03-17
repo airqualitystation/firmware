@@ -234,6 +234,7 @@ int main(void)
     #elif CHOIX_CAPTEUR_PARTICULE == 2 /* Initialize PMS7003 */
    	if(pms7003_init(&dev_pms7003, &pms7003_params[0])>=0){
    		puts("PMS7003 : init [OK]");
+   		WAKEUP_SOFT(&dev_pms7003);
    		// The active mode is better accurate than passive
 		// The active mode need a callback register procedure.
 		// -> If you want use the passive mode, then you need to creat your own RX_CALLBACK and 	attached to the device
@@ -267,7 +268,8 @@ int main(void)
     semtech_loramac_set_appeui(&loramac, appeui);
     semtech_loramac_set_appkey(&loramac, appkey);
 
-    /* Use a fast datarate, e.g. BW125/SF7 in EU868 */
+    /* LORAMAC_DR_5 -> Use a fast datarate BW125/SF7 (11000bit/s) in EU868 */
+    /* (others choice in loramac.h) */
     semtech_loramac_set_dr(&loramac, LORAMAC_DR_5);
 
     /* Start the Over-The-Air Activation (OTAA) procedure to retrieve the
@@ -277,8 +279,10 @@ int main(void)
     puts("Starting join procedure");
     while(semtech_loramac_join(&loramac, LORAMAC_JOIN_OTAA) != SEMTECH_LORAMAC_JOIN_SUCCEEDED) {
         puts("Join procedure failed");
+        LED3_ON; //LED Rouge
     }
     puts("Join procedure succeeded");
+    LED3_OFF; //LED Rouge
     
     /* start the recv thread */
     thread_create(_recv_stack, sizeof(_recv_stack),THREAD_PRIORITY_MAIN - 1, 0, _recv, NULL, "recv thread");
@@ -302,17 +306,7 @@ int main(void)
 
     /* trigger the first send */
     msg_t msg;
-    #if CHOIX_CAPTEUR_PARTICULE == 0
- 	//Pas de capteur de particule
-    #else
-    msg_send(&msg, particule_pid);//Envoi un message au thread particule
-    #endif
-    
-    #if CHOIX_CAPTEUR_HT == 0
-    //Pas de capteur de temperature/humidite
-    #else
-    msg_send(&msg, ht_pid);//Envoi un message au thread ht
-    #endif
+    msg_send(&msg, sender_pid);//Envoi un message au thread ht
     
     return 0;
 }
@@ -380,6 +374,7 @@ static void Traitement_SDS011(void)
 		msg_receive(&sds011_msg);//msg_send par la fonction measure_cb quand il a recu une valeur
 		data.pm_10 = sds011_msg.content.value >> 16;
 		data.pm_2_5 = sds011_msg.content.value & 0xFFFF;
+		LED2_TOGGLE; //LED bleue clignote
     }
     /* enregistre 10 autres mesure mtn que le ventilateur a bien tourner */
     for(unsigned msg_cnt = 0; msg_cnt < 10; msg_cnt++){
@@ -388,6 +383,7 @@ static void Traitement_SDS011(void)
 		moy_pm10+=data.pm_10;//Stock les valeurs de pm10
 		data.pm_2_5 = sds011_msg.content.value & 0xFFFF;
 		moy_pm2_5+=data.pm_2_5;//Stock les valeurs de pm2.5
+		LED2_TOGGLE; //LED bleue clignote
     }
     //puts("[FIN MESSAGE]");
 	
@@ -465,7 +461,8 @@ static void Traitement_PMS7003(void)
         //data.pm_1_at = msg1.content.value & 0xFFFF;
         msg_receive(&msg2);
         data.pm_1 = msg2.content.value & 0xFFFF;
-        //data.concentration_unit_at = msg2.content.value & 0xFFFF;  
+        //data.concentration_unit_at = msg2.content.value & 0xFFFF; 
+        LED2_TOGGLE; //LED bleue clignote
     }
     for(unsigned msg_cnt = 0; msg_cnt < 10; msg_cnt++){
         msg_receive(&msg1);
@@ -479,6 +476,7 @@ static void Traitement_PMS7003(void)
         data.pm_1 = msg2.content.value & 0xFFFF;
         moy_pm1+=data.pm_1;//Stock les valeurs de pm10
         //data.concentration_unit_at = msg2.content.value & 0xFFFF;  
+        LED2_TOGGLE; //LED bleue clignote
     }
     /* unregister callback */
     pms7003_register_callback(&dev_pms7003,NULL,NULL);
@@ -691,6 +689,7 @@ static void *sender(void *arg)
     {       
         /* Wait the alarm */
         msg_receive(&msg); //Attend l'execution de msg_send(&msg, sender_pid)
+        LED1_ON; //LED Verte
         
         //Reset le lpp.buffer 
         cayenne_lpp_reset(&lpp);
@@ -750,6 +749,9 @@ static void *sender(void *arg)
 		
 		/* Schedule the next wake-up alarm */
         _prepare_next_alarm();
+        
+        /* LED Verte off */
+        LED1_OFF; 
     }
 
     /* this should never be reached */
@@ -861,6 +863,7 @@ static void *_particule(void *arg)
     
     while (1) {
         msg_receive(&msg); //Attend l'execution de msg_send(&msg, particule_pid)
+        LED2_ON; //LED Bleue
     #if CHOIX_CAPTEUR_PARTICULE == 1
      	Traitement_SDS011();
     #elif CHOIX_CAPTEUR_PARTICULE == 2
@@ -884,6 +887,8 @@ static void *_particule(void *arg)
 		}
         /* Schedule the next wake-up alarm */
         _prepare_next_alarm();
+        /* LED Bleue off */
+        LED2_OFF;
     }
     /* this should never be reached */
     return NULL;
