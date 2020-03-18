@@ -1,4 +1,4 @@
-#Notes :
+# Notes :
 
 This application is a test for the pms7003 driver.  
 
