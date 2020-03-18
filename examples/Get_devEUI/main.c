@@ -1,13 +1,14 @@
 /************************************************************************
  
- Ce programme permet d'avoir le devEUI de sa carte.
- Attention ce programme n'est pas compatible avec toute les cartes.
- Carte compatible : b-l072z-lrwan1
+This program allows you to have the devEUI of your LoRa board.  
 
- Pour les autres cartes, essayez d'executer ce programme mais il est
- possible que celui ci retourne une erreur.
- N'oubliez pas de préciser la board que vous utilisez dans le fichier
- Makefile
+Please note that this program is not compatible with all boards.  
+
+Compatible board: b-l072z-lrwan1
+
+For the other board, take your inspiration from it.  
+
+Do not forget to specify the `b-l072z-lrwan1` board in your Makefile  
  
 *************************************************************************/
 

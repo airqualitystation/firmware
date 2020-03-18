@@ -1,5 +1,9 @@
 # Air Quality Station :: Firmware
-This project contains the RIOT firmware of the Air Quality Station
+This repository contains the RIOT firmware of the Air Quality Station project.
+You'll find three folders: drivers mainCode and examples.  
+* _drivers_ contains all the modifications that we have brought in the driver folder of RIOT OS.  
+* _examples_ contains all the applications test that we have made to study the RIOT features.  
+* _mainCode_ contains the main application of the project called Air_quality.  
 
 ## Hardware requirements
 * [STM32 Nucleo B-L072Z-LRWAN1](https://www.st.com/en/evaluation-tools/b-l072z-lrwan1.html)
@@ -11,28 +15,46 @@ This project contains the RIOT firmware of the Air Quality Station
 * [LiPo Battery 3.7 V / 2000 mAh](https://www.sparkfun.com/datasheets/Batteries/UnionBattery-2000mAh.pdf)
 * [Solar Power Manager 5V](https://www.dfrobot.com/product-1712.html)
 
-## Build and flash the firmware
+## Build and flash applications
 * First, you need to clone, or download, [the RIOT library](https://github.com/RIOT-OS/RIOT.git)
 * To build the project, you need to copy the files called "drivers" and "examples" in your RIOT file
 * You need to merge and replace files
 
-Now, you can compile the Air_quality project in your board with the command: 'make flash' or 'make flash term' if you have pyterm.
 
-## Set up the Air quality project
-### choix_config.h
-In the file called "choix_config.h", you can choose:
-* which sensor or sensors you want to use
-* the sensor measurement period
-* the frequency of transmission of datas with the lorawan protocol
+* Each applications (examples and mainCode folders) have a **_README note_** 
 
-### Makefile
-Add the RIOT libraries that are useful for the Air quality project.
-You need to edit:
-* BOARD (default: b-l072z-lrwan1)
-* DRIVER (default: sx1276)
-* LORA_REGION (default: EU868)
-* DEVEUI, APPEUI and APPKEY
+You can compile the applications test and the Air_quality project in your board with the command: `make flash` or `make flash term` if you have pyterm.
 
-### main.c
-the program allows to measure the air quality PM2.5, PM10 (and PM1 only with the pms7003), the temperature, the humidity and sends the datas with the lorawan protocol.
+## RIOT OS NOTES :
+
+### How to change the standard output UART interface ?
+
+* In **RIOT/sys/include/stdio_uart.h** change the this line as you want (according to your board peripheric configuration):  
+
+`#define STDIO_UART_DEV          UART_DEV(0)`
+
+### How to change the board Bauderate ? 
+
+* In **RIOT/sys/include/stdio_uart.h** change the this line as you want :  
+
+`#define STDIO_UART_BAUDRATE     (115200)`  
+
+ -> 9600, 115200 , 34800 ...  
+
+
+### How to change the terminal Bauderate with pyterm ? 
+
+* By enter this terminal command to flash and starting pyterm :  
+
+`make flash  term  \ TERMFLAGS=" -p /dev/ttyACM0 -b  your_bauderate"`
+
+* Or just starting the standard output with pyterm :  
+
+`make term  \ TERMFLAGS=" -p /dev/ttyACM0 -b  your_bauderate"` 
+
+### Problem often reported with make command : 
+
+* Ok ... We think you don't have the rights on your serial port. Well try that :  
+
+`sudo chmod o+rw /dev/ttyACM0`
 
