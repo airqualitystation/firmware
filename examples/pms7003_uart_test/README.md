@@ -1,6 +1,6 @@
 # Notes :
 
-This program is a simple test of the UART protocol forthe pms7003 sensor.  
+This program is a simple test of the UART protocol for the pms7003 sensor.  
 It show all the datas frame receive on the RX board.    
 This program is an easy way to understand how the UART communication works.    
 * For the synchronization between the RX callback and the main fonction, we use mutex
