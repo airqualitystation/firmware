@@ -1,12 +1,12 @@
-This folder contain all the modifications that we have done on the <driver> folder of RIOT OS.  
+This folder contain all the modifications that we have done on the **_<driver>_** folder of RIOT OS.  
 
 # PMS7003 DRIVER :
 
 We have developed a library to manage the pms7003 sensor on RIOT.  
-If you want to import it on yout RIOT environement, copy and paste <pms7003> on the coresponding folder on RIOT.  
-Also don't forget to add the "Makefile.dep" and "Makefile.include" in the <driver> root folder of RIOT.  
+If you want to import it on yout RIOT environement, copy and paste **_<pms7003>_** on the coresponding folder on RIOT.  
+Also don't forget to add the **_"Makefile.dep"_** and **_"Makefile.include"_** in the **_<driver>_** root folder of RIOT.  
 	
-In file <firmware/pms7003/include/pms7003_params.h> you can modify the GPIO for the "set pin" and the UART port (RX/TX).  
+In file **_<firmware/pms7003/include/pms7003_params.h>_** you can modify the GPIO for the "set pin" and the UART port (RX/TX).  
 By default UART_DEV(1) and GPIO_PIN(PORT_A, 8) is used.  
 
 
@@ -40,4 +40,4 @@ Here a look at the RIOT UART pin map available for this board :
 UART(0) is used by default for the standard output (StLink)  
 
 
-Also see our driver test in folder <firmware/examples/pms7003_test>  
+Also see our driver test in folder **_<firmware/examples/pms7003_test>_**  
