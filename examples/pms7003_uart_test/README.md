@@ -8,7 +8,8 @@ but a messaging system can be used with the static PID of the main Thread
 
 ## Send command through UART interface at the PMS7003
 
-To do that you need this procedure :  
+To do that you need this procedure :
+
 `void uart_write (uart_t uart, const uint8_t *data, size_t len);`  
 
 For example if you use UART(1) on your board then you can do this for the **PMS7003**:
