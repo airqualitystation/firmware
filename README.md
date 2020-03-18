@@ -1,6 +1,6 @@
 # Air Quality Station :: Firmware
 This repository contains the RIOT firmware of the Air Quality Station project.
-You'll find three folders: drivers mainCode and examples.  
+You'll find three folders: _drivers mainCode and examples_.  
 * _drivers_ contains all the modifications that we have brought in the driver folder of RIOT OS.  
 * _examples_ contains all the applications test that we have made to study the RIOT features.  
 * _mainCode_ contains the main application of the project called Air_quality.  
@@ -29,13 +29,14 @@ You can compile the applications test and the Air_quality project in your board 
 
 ### How to change the standard output UART interface ?
 
-* In **RIOT/sys/include/stdio_uart.h** change the this line as you want (according to your board peripheric configuration):  
+* In **RIOT/sys/include/stdio_uart.h** change this line as you want (according to your board peripheric configuration):  
 
 `#define STDIO_UART_DEV          UART_DEV(0)`
 
+ -> UART_DEV(0) , UART_DEV(1) ... 
 ### How to change the board Bauderate ? 
 
-* In **RIOT/sys/include/stdio_uart.h** change the this line as you want :  
+* In **RIOT/sys/include/stdio_uart.h** change this line as you want :  
 
 `#define STDIO_UART_BAUDRATE     (115200)`  
 
