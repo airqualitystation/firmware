@@ -14,5 +14,5 @@ For the LoRa board project we use, there is no implementation of ADC driver on R
 
 The higher gain allows us to measure an input range of +/-0.256V with 16 bit resolution it's just great for our purpose to monitoring small voltage drops.  
 
-**Find more details in the doc repository**
+**Find more details in the _hardware_ repository**
 
