@@ -1,10 +1,10 @@
 # Air Quality Station :: Firmware
 This repository contains the RIOT firmware of the Air Quality Station project.
-You'll find three folders: _drivers mainCode and examples_.  
-* _drivers_ contains all the modifications that we have brought in the driver folder of RIOT OS.  
-* _examples_ contains all the applications test that we have made to study the RIOT features.  
-* _mainCode_ contains the main application of the project called Air_quality.  
-
+You'll find four folders: _**drivers** , **mainCode** , **examples** and **Cayenne_To_Excel**_.  
+* _**drivers**_ contains all the modifications that we have brought in the driver folder of RIOT OS.  
+* _**examples**_ contains all the applications test that we have made to study the RIOT features.  
+* _**mainCode**_ contains the main application of the project called Air_quality.  
+* _**Cayenne_To_Excel**_ contains a short C program to export and manage the downloaded datas files from Cayenne to Excel.  
 ## Hardware requirements
 * [STM32 Nucleo B-L072Z-LRWAN1](https://www.st.com/en/evaluation-tools/b-l072z-lrwan1.html)
 * [SDS011](https://cdn-reichelt.de/documents/datenblatt/X200/SDS011-DATASHEET.pdf)
