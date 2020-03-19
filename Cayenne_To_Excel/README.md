@@ -35,4 +35,4 @@ Please write these next commands in the same order :
 
 
 
-Now you can oppen and check datas from cayenne in your favorite spreadsheet.
+Now you can open and check datas from cayenne in your favorite spreadsheet.
