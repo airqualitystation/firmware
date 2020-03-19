@@ -29,7 +29,7 @@ Below, you've a look at the Arduino pin map available for the b-l072z-lrwan1 boa
 * D14	=>	GPIO_PIN(PORT_B, 9)  
 * D15	=>  	GPIO_PIN(PORT_B, 8)  
 
-The analog pin are not available because this board doesn't have ADC driver implementation on RIOT  
+The analog pin are not available because this board doesn't have an ADC driver implementation on RIOT  
 
 
 Here a look at the RIOT UART pin map available for this board :  
