@@ -21,7 +21,7 @@ You'll find four folders: _**drivers** , **mainCode** , **examples** and **Cayen
 * You need to merge and replace files
 
 
-* Each applications (examples and mainCode folders) have a **_README note_** 
+* Each applications (examples, Cayenne_To_Excel updatedand mainCode folders) have a **_README note_** 
 
 You can compile the applications test and the Air_quality project in your board with the command: `make flash` or `make flash term` if you have pyterm.
 
