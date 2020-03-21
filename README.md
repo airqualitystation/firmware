@@ -14,6 +14,7 @@ You'll find two folders: _**RIOT** and **Cayenne_To_Excel**_.
 * [Solar Panel 180x80 mm](https://www.gotronic.fr/art-cellule-solaire-sol2w-18995.htm#complte_desc)
 * [LiPo Battery 3.7 V / 2000 mAh](https://www.sparkfun.com/datasheets/Batteries/UnionBattery-2000mAh.pdf)
 * [Solar Power Manager 5V](https://www.dfrobot.com/product-1712.html)
+* [Analog digital converter ADS1115](https://www.adafruit.com/product/1085)
 
 ## Build and flash applications
 * First, you need to clone, or download, [the RIOT library](https://github.com/RIOT-OS/RIOT.git)
