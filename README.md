@@ -1,9 +1,9 @@
 # Air Quality Station :: Firmware
 This repository contains the RIOT firmware of the Air Quality Station project.
-You'll find four folders: _**drivers** , **mainCode** , **examples** and **Cayenne_To_Excel**_.  
-* _**drivers**_ contains all the modifications that we have brought in the driver folder of RIOT OS.  
-* _**examples**_ contains all the applications test that we have made to study the RIOT features.  
-* _**mainCode**_ contains the main application of the project called Air_quality.  
+You'll find four folders: _**RIOT** and **Cayenne_To_Excel**_.  
+* _**RIOT**_ 
+  * _**drivers**_ contains all the modifications that we have brought in the driver folder of RIOT OS.  
+  * _**examples**_ contains all the applications test that we have made to study the RIOT features and the main application of the project called Air_quality.  
 * _**Cayenne_To_Excel**_ contains a short C program to import and manage the downloaded datas files from Cayenne to Excel or an other spreadsheet.  
 ## Hardware requirements
 * [STM32 Nucleo B-L072Z-LRWAN1](https://www.st.com/en/evaluation-tools/b-l072z-lrwan1.html)
@@ -21,7 +21,7 @@ You'll find four folders: _**drivers** , **mainCode** , **examples** and **Cayen
 * You need to merge and replace files
 
 
-* Each applications (examples, Cayenne_To_Excel and mainCode folders) have a **_README note_** 
+* Each applications (examples, Cayenne_To_Excel and Air_quality folders) have a **_README note_** 
 
 You can compile the applications test and the Air_quality project in your board with the command: `make flash` or `make flash term` if you have pyterm.
 
