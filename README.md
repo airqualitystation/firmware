@@ -21,7 +21,7 @@ You'll find four folders: _**RIOT** and **Cayenne_To_Excel**_.
 * You need to merge and replace files
 
 
-* Each applications (examples, Cayenne_To_Excel and mainCode folders) have a **_README note_** 
+* Each applications (examples, Cayenne_To_Excel and Air_quality folders) have a **_README note_** 
 
 You can compile the applications test and the Air_quality project in your board with the command: `make flash` or `make flash term` if you have pyterm.
 
