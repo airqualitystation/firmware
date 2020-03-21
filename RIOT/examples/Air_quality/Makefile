@@ -29,6 +29,7 @@ USEMODULE += pms7003
 USEMODULE += dht
 USEMODULE += bme280_i2c
 USEMODULE += xtimer
+USEMODULE += periph_pm
 
 FEATURES_REQUIRED += periph_rtc
 

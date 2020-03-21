@@ -42,6 +42,7 @@
 #include "msg.h"
 #include "thread.h"
 #include "fmt.h"
+#include "periph/pm.h"
 
 #include "periph/rtc.h"
 
@@ -652,6 +653,7 @@ static void _prepare_next_alarm(void)
     	puts("[ERROR] : Aucun capteur\n");
     	return;
     #endif
+
     time.tm_sec += PERIOD;
     mktime(&time);
     rtc_set_alarm(&time, rtc_cb, NULL);
@@ -665,9 +667,12 @@ static void _send_message(void)
     /* Try to send the message */
     uint8_t ret = semtech_loramac_send(&loramac,lpp.buffer,lpp.cursor);
     
-    if (ret != SEMTECH_LORAMAC_TX_DONE)  {
+    if (ret != SEMTECH_LORAMAC_TX_DONE)  
+    {
         printf("Cannot send message, ret code: %d\n", ret);
-        return;
+        LED1_OFF; //LED Verte         
+        LED3_ON; //LED Rouge
+        pm_reboot();
     }
 }
 
