@@ -36,10 +36,10 @@ Pas de capteur ==> #define CHOIX_CAPTEUR_HT		(0U)
 ----------------------------------------------*/
 
 // The frequency of transmission of datas	
-#define PERIOD_LORA			(900U)
+#define PERIOD_LORA			(60U)
 // The sensor measurement period
-#define PERIOD_PARTICULE	(300U)
-#define PERIOD_HT			(900U)
+#define PERIOD_PARTICULE	(60U)
+#define PERIOD_HT			(60U)
 
 #endif /* CHOIX_CONFIG_H */
 

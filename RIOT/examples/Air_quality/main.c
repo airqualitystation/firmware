@@ -56,8 +56,6 @@
 /********************************* Variable globale ***********************************/
 
 #define RECV_MSG_QUEUE                   (4U)
-static msg_t _recv_queue[RECV_MSG_QUEUE];
-static char _recv_stack[THREAD_STACKSIZE_DEFAULT];
 
 static kernel_pid_t sender_pid;
 static char sender_stack[THREAD_STACKSIZE_MAIN / 2];
@@ -67,7 +65,7 @@ static char sender_stack[THREAD_STACKSIZE_MAIN / 2];
 #else
 #define PARTICULE_MSG_QUEUE                   (4U)
 static kernel_pid_t particule_pid;
-static char particule_stack[THREAD_STACKSIZE_MAIN];
+static char particule_stack[THREAD_STACKSIZE_SMALL];
 #endif
 
 #if CHOIX_CAPTEUR_HT == 0
@@ -75,7 +73,7 @@ static char particule_stack[THREAD_STACKSIZE_MAIN];
 #else
 #define HT_MSG_QUEUE                   (4U)
 static kernel_pid_t ht_pid;
-static char ht_stack[THREAD_STACKSIZE_DEFAULT];
+static char ht_stack[THREAD_STACKSIZE_SMALL];
 #endif
 
 /* Messages are sent every 1000s to respect the duty cycle on each channel */
@@ -149,7 +147,6 @@ static void rtc_cb(void *arg);
 static void _prepare_next_alarm(void);
 static void _send_message(void);
 static void *sender(void *arg);
-static void *_recv(void *arg);
 
 #if CHOIX_CAPTEUR_PARTICULE == 0
 //Pas de capteur de particule
@@ -285,29 +282,9 @@ int main(void)
     puts("Join procedure succeeded");
     LED3_OFF; //LED Rouge
     
-    /* start the recv thread */
-    thread_create(_recv_stack, sizeof(_recv_stack),THREAD_PRIORITY_MAIN - 1, 0, _recv, NULL, "recv thread");
 
     /* start the sender thread */
-    sender_pid = thread_create(sender_stack, sizeof(sender_stack),THREAD_PRIORITY_MAIN - 1, 0, sender, NULL, "sender");
- 	
- 	#if CHOIX_CAPTEUR_PARTICULE == 0
- 	//Pas de capteur de particule
- 	#else 
-    /* start the particule thread */
-    particule_pid = thread_create(particule_stack, sizeof(particule_stack),THREAD_PRIORITY_MAIN - 1, 0, _particule, NULL, "capteur_particule");
-    #endif
-    
-    #if CHOIX_CAPTEUR_HT == 0
-    //Pas de capteur de temperature/humidite
-    #else
-    /* start the ht thread */
-    ht_pid = thread_create(ht_stack, sizeof(ht_stack),THREAD_PRIORITY_MAIN - 1, 0, _ht, NULL, "capteur_ht");
-    #endif
-
-    /* trigger the first send */
-    msg_t msg;
-    msg_send(&msg, sender_pid);//Envoi un message au thread ht
+    sender_pid = thread_create(sender_stack, sizeof(sender_stack),THREAD_PRIORITY_MAIN - 2, 0, sender, NULL, "sender");
     
     return 0;
 }
@@ -375,7 +352,7 @@ static void Traitement_SDS011(void)
 		msg_receive(&sds011_msg);//msg_send par la fonction measure_cb quand il a recu une valeur
 		data.pm_10 = sds011_msg.content.value >> 16;
 		data.pm_2_5 = sds011_msg.content.value & 0xFFFF;
-		LED2_TOGGLE; //LED bleue clignote
+		//LED2_TOGGLE; //LED bleue clignote
     }
     /* enregistre 10 autres mesure mtn que le ventilateur a bien tourner */
     for(unsigned msg_cnt = 0; msg_cnt < 10; msg_cnt++){
@@ -384,7 +361,7 @@ static void Traitement_SDS011(void)
 		moy_pm10+=data.pm_10;//Stock les valeurs de pm10
 		data.pm_2_5 = sds011_msg.content.value & 0xFFFF;
 		moy_pm2_5+=data.pm_2_5;//Stock les valeurs de pm2.5
-		LED2_TOGGLE; //LED bleue clignote
+		//LED2_TOGGLE; //LED bleue clignote
     }
     //puts("[FIN MESSAGE]");
 	
@@ -565,7 +542,6 @@ static void rtc_cb(void *arg)
     */
     
     (void) arg;
-    msg_t msg;
     
     cnt_Lora_PERIOD+=PERIOD;
     cnt_particule_PERIOD+=PERIOD;
@@ -576,41 +552,46 @@ static void rtc_cb(void *arg)
    		cnt_particule_PERIOD=0;
     	cnt_ht_PERIOD=0;
     	cnt_Lora_PERIOD=0;
-    	msg_send(&msg, sender_pid);
+    	/* start the sender thread */
+   		sender_pid = thread_create(sender_stack, sizeof(sender_stack),THREAD_PRIORITY_MAIN - 2, 0, sender, NULL, "sender");
    	}
     else if((cnt_particule_PERIOD >= particule_PERIOD)&&(cnt_ht_PERIOD >= ht_PERIOD))
     {
     	cnt_particule_PERIOD=0;
     	cnt_ht_PERIOD=0;
     	#if CHOIX_CAPTEUR_PARTICULE == 0
-        //Pas de capteur de particule
-        #else
-        msg_send(&msg, particule_pid); //Active le thread correspondant au pid
-        #endif
-        
-        #if CHOIX_CAPTEUR_HT == 0
-    	//Pas de capteur de temperature/humidite
-    	#else
-    	msg_send(&msg, ht_pid); //Active le thread correspondant au pid
-    	#endif
+	 	//Pas de capteur de particule
+	 	#else 
+		/* start the particule thread */
+		particule_pid = thread_create(particule_stack, sizeof(particule_stack),THREAD_PRIORITY_MAIN - 1, 0, _particule, NULL, "capteur_particule");
+		#endif
+		
+		#if CHOIX_CAPTEUR_HT == 0
+		//Pas de capteur de temperature/humidite
+		#else
+		/* start the ht thread */
+		ht_pid = thread_create(ht_stack, sizeof(ht_stack),THREAD_PRIORITY_MAIN, 0, _ht, NULL, "capteur_ht");
+		#endif
     }
     else if(cnt_particule_PERIOD >= particule_PERIOD)
     {
     	cnt_particule_PERIOD=0;
     	#if CHOIX_CAPTEUR_PARTICULE == 0
-        //Pas de capteur de particule
-        #else
-        msg_send(&msg, particule_pid); //Active le thread correspondant au pid
-        #endif
+	 	//Pas de capteur de particule
+	 	#else 
+		/* start the particule thread */
+		particule_pid = thread_create(particule_stack, sizeof(particule_stack),THREAD_PRIORITY_MAIN - 1, 0, _particule, NULL, "capteur_particule");
+		#endif
     }
     else if(cnt_ht_PERIOD >= ht_PERIOD)
     {
     	cnt_ht_PERIOD=0;
     	#if CHOIX_CAPTEUR_HT == 0
-    	//Pas de capteur de temperature/humidite
-    	#else
-    	msg_send(&msg, ht_pid); //Active le thread correspondant au pid
-    	#endif
+		//Pas de capteur de temperature/humidite
+		#else
+		/* start the ht thread */
+		ht_pid = thread_create(ht_stack, sizeof(ht_stack),THREAD_PRIORITY_MAIN, 0, _ht, NULL, "capteur_ht");
+		#endif
     }
     else
     {
@@ -657,6 +638,7 @@ static void _prepare_next_alarm(void)
     time.tm_sec += PERIOD;
     mktime(&time);
     rtc_set_alarm(&time, rtc_cb, NULL);
+    pm_set_lowest();
 }
 
 static void _send_message(void)
@@ -686,167 +668,72 @@ static void *sender(void *arg)
 
     (void)arg;
 
-    msg_t msg;
-    msg_t msg_queue[8];
-    msg_init_queue(msg_queue, 8);    
-
-    while (1) 
-    {       
-        /* Wait the alarm */
-        msg_receive(&msg); //Attend l'execution de msg_send(&msg, sender_pid)
-        LED1_ON; //LED Verte
+    LED1_ON; //LED Verte
         
-        //Reset le lpp.buffer 
-        cayenne_lpp_reset(&lpp);
+    //Reset le lpp.buffer 
+    cayenne_lpp_reset(&lpp);
         
-        #if CHOIX_CAPTEUR_PARTICULE == 0
-        //Pas de capteur de particule
-        #else
-        //add dans lpp.buffer les valeurs retourné par le capteur 
-     	cayenne_lpp_add_temperature(&lpp,1,tot_pm2_5/cnt_particule); // Pour pm2.5
-    	cayenne_lpp_add_temperature(&lpp,2,tot_pm10/cnt_particule); // Pour pm10   
-   	 	#endif
+    #if CHOIX_CAPTEUR_PARTICULE == 0
+    //Pas de capteur de particule
+    #else
+    //add dans lpp.buffer les valeurs retourné par le capteur 
+    cayenne_lpp_add_temperature(&lpp,1,tot_pm2_5/cnt_particule); // Pour pm2.5
+    cayenne_lpp_add_temperature(&lpp,2,tot_pm10/cnt_particule); // Pour pm10   
+   	#endif
    	 	
-   	 	#if CHOIX_CAPTEUR_HT == 0
-   	 	//Pas de capteur de temperature/humidite
-   	 	#else
-     	cayenne_lpp_add_temperature(&lpp,3,tot_temp/cnt_ht); //Affichage Temperature
-    	cayenne_lpp_add_relative_humidity(&lpp,4,tot_hum/cnt_ht);// Humidite
-    	#endif
+   	#if CHOIX_CAPTEUR_HT == 0
+   	//Pas de capteur de temperature/humidite
+   	#else
+    cayenne_lpp_add_temperature(&lpp,3,tot_temp/cnt_ht); //Affichage Temperature
+    cayenne_lpp_add_relative_humidity(&lpp,4,tot_hum/cnt_ht);// Humidite
+    #endif
     	
-    	#if CHOIX_CAPTEUR_PARTICULE == 2
-    	cayenne_lpp_add_temperature(&lpp,5,tot_pm1/cnt_particule); // Pour pm1
-   	 	#endif
+    #if CHOIX_CAPTEUR_PARTICULE == 2
+    cayenne_lpp_add_temperature(&lpp,5,tot_pm1/cnt_particule); // Pour pm1
+   	#endif
 
-		/*************************** Important *****************************/
-		//	Utilisation de la fonction "cayenne_lpp_add_temperature();"
-		//  car le format est de 2 bytes et 0.1 donc possibilité d'aller
-		//  jusqu'à la valeur 3276.8 car signé et notre valeur max est 1999.9
-		/*******************************************************************/
+	/*************************** Important *****************************/
+	//	Utilisation de la fonction "cayenne_lpp_add_temperature();"
+	//  car le format est de 2 bytes et 0.1 donc possibilité d'aller
+	//  jusqu'à la valeur 3276.8 car signé et notre valeur max est 1999.9
+	/*******************************************************************/
 
 
-		/* Reset */
-		cnt_ht=0.00;
-		cnt_particule=0.00;
-		tot_pm2_5=0.00;
-		tot_pm10=0.00;
-		tot_temp=0.00;
-		tot_hum=0.00;
-		#if CHOIX_CAPTEUR_PARTICULE == 2
-		tot_pm1=0.00;
-		#endif
+	/* Reset */
+	cnt_ht=0.00;
+	cnt_particule=0.00;
+	tot_pm2_5=0.00;
+	tot_pm10=0.00;
+	tot_temp=0.00;
+	tot_hum=0.00;
+	#if CHOIX_CAPTEUR_PARTICULE == 2
+	tot_pm1=0.00;
+	#endif
 
-        /* Trigger the message send */
-        puts("[SEND]");
-        _send_message();
+    /* Trigger the message send */
+    puts("[SEND]");
+    _send_message();
         
-        #if CHOIX_CAPTEUR_PARTICULE == 0
-        //Pas de capteur de particule
-        #else
-        msg_send(&msg, particule_pid); //Active le thread correspondant au pid
-        #endif
-        
-        #if CHOIX_CAPTEUR_HT == 0
-    	//Pas de capteur de temperature/humidite
-    	#else
-    	msg_send(&msg, ht_pid); //Active le thread correspondant au pid
-    	#endif
+    #if CHOIX_CAPTEUR_PARTICULE == 0
+	//Pas de capteur de particule
+	#else 
+	/* start the particule thread */
+	particule_pid = thread_create(particule_stack, sizeof(particule_stack),THREAD_PRIORITY_MAIN - 1, 0, _particule, NULL, "capteur_particule");
+	#endif
 		
-		/* Schedule the next wake-up alarm */
-        _prepare_next_alarm();
+	#if CHOIX_CAPTEUR_HT == 0
+	//Pas de capteur de temperature/humidite
+	#else
+	/* start the ht thread */
+	ht_pid = thread_create(ht_stack, sizeof(ht_stack),THREAD_PRIORITY_MAIN, 0, _ht, NULL, "capteur_ht");
+	#endif
+		
+	/* Schedule the next wake-up alarm */
+    _prepare_next_alarm();
         
-        /* LED Verte off */
-        LED1_OFF; 
-    }
-
-    /* this should never be reached */
-    return NULL;
-}
-
-static void *_recv(void *arg)
-{
-    /* Thread gérant les downlinks provenant de TTN :
-    * Recoit le message en hexadécimal et change la période correspondante.
-    */
+    /* LED Verte off */
+    LED1_OFF;
     
-    msg_init_queue(_recv_queue, RECV_MSG_QUEUE);
-    (void)arg;
-    while (1) 
-    {
-        /* blocks until some data is received */
-        if(semtech_loramac_recv(&loramac)==SEMTECH_LORAMAC_RX_DATA)
-        {
-    	    loramac.rx_data.payload[loramac.rx_data.payload_len] = 0;
-    	    printf("Data received: %s, port: %d\n",
-               (char *)loramac.rx_data.payload, loramac.rx_data.port);
-            switch(loramac.rx_data.payload[0])
-            {
-            	//Downlink :
-            	case 'A'://41
-            		Lora_PERIOD=60;//1 min
-            	break;
-            	
-            	case 'B'://42
-            		Lora_PERIOD=900;//15 min
-            	break;
-            	
-            	case 'C'://43
-            		Lora_PERIOD=1200;//20 min
-            	break;
-            	
-            	case 'D'://44
-            		Lora_PERIOD=1800;//30 min
-            	break;
-            	
-            	
-            	case 'Q'://51
-            		particule_PERIOD=60;
-            	break;
-            	
-            	case 'R'://52
-            		particule_PERIOD=120;
-            	break;
-            	
-            	case 'S'://53
-            		particule_PERIOD=300;
-            	break;
-            	
-            	case 'T'://54
-            		particule_PERIOD=900;
-            	break;
-            	
-            	case 'U'://55
-            		particule_PERIOD=1200;
-            	break;
-            	
-            	case 'a'://61
-            		ht_PERIOD=60;
-            	break;
-            	
-            	case 'b'://62
-            		ht_PERIOD=120;
-            	break;
-            	
-            	case 'c'://63
-            		ht_PERIOD=300;
-            	break;
-            	
-            	case 'd'://64
-            		particule_PERIOD=900;
-            	break;
-            	
-            	case 'e'://65
-            		particule_PERIOD=1200;
-            	break;
-            	
-            	default:
-            		Lora_PERIOD=900;//par defaut 15 min
-            		particule_PERIOD=600;//par defaut 10 min
-            		ht_PERIOD=900;//par defaut 15 min
-            	break;
-            }
-        }
-    }
     return NULL;
 }
 
@@ -862,13 +749,8 @@ static void *_particule(void *arg)
 	*/
 	
 	(void)arg;
-    msg_t msg;  
-    msg_t msg_queue[PARTICULE_MSG_QUEUE];
-    msg_init_queue(msg_queue, PARTICULE_MSG_QUEUE); 
-    
-    while (1) {
-        msg_receive(&msg); //Attend l'execution de msg_send(&msg, particule_pid)
-        LED2_ON; //LED Bleue
+
+    LED2_ON; //LED Bleue
     #if CHOIX_CAPTEUR_PARTICULE == 1
      	Traitement_SDS011();
     #elif CHOIX_CAPTEUR_PARTICULE == 2
@@ -878,24 +760,23 @@ static void *_particule(void *arg)
      	return;
     #endif
 
-		cnt_particule++;//Compte le nombre de mesure pour réaliser la moyenne
-		if(cnt_particule >= 10.00) 
-		{
-			/* Au bout de 10 cycle de mesure, on fait la moyenne car 
-			risque d'overflow du type float */
-			tot_pm2_5=tot_pm2_5/cnt_particule;
-			tot_pm10=tot_pm10/cnt_particule;
-			#if CHOIX_CAPTEUR_PARTICULE == 2
-			tot_pm1=tot_pm1/cnt_particule;
-			#endif
-			cnt_particule=1.00;
-		}
-        /* Schedule the next wake-up alarm */
-        _prepare_next_alarm();
-        /* LED Bleue off */
-        LED2_OFF;
-    }
-    /* this should never be reached */
+	cnt_particule++;//Compte le nombre de mesure pour réaliser la moyenne
+	if(cnt_particule >= 10.00) 
+	{
+		/* Au bout de 10 cycle de mesure, on fait la moyenne car 
+		risque d'overflow du type float */
+		tot_pm2_5=tot_pm2_5/cnt_particule;
+		tot_pm10=tot_pm10/cnt_particule;
+		#if CHOIX_CAPTEUR_PARTICULE == 2
+		tot_pm1=tot_pm1/cnt_particule;
+		#endif
+		cnt_particule=1.00;
+	}
+    /* Schedule the next wake-up alarm */
+    _prepare_next_alarm();
+    /* LED Bleue off */
+    LED2_OFF;
+    
     return NULL;
 }
 #endif
@@ -912,12 +793,7 @@ static void *_ht(void *arg)
 	*/
 	
 	(void)arg;
-    msg_t msg; 
-    msg_t msg_queue[HT_MSG_QUEUE];
-    msg_init_queue(msg_queue, HT_MSG_QUEUE);
 
-    while (1) {
-        msg_receive(&msg); //Attend l'execution de msg_send(&msg, ht_pid)
     #if CHOIX_CAPTEUR_HT == 1
      	Traitement_DHT22();
 	#elif CHOIX_CAPTEUR_HT == 2
@@ -926,20 +802,20 @@ static void *_ht(void *arg)
 		puts("[ERROR] : choix capteur function ==> _ht");
      	return;
 	#endif
-		cnt_ht++;//Compte le nombre de mesure pour réaliser la moyenne 
-		if(cnt_ht >= 10.00) 
-		{
-			/* Au bout de 10 cycle de mesure, on fait la moyenne car 
-			risque d'overflow du type float */
-			tot_temp=tot_temp/cnt_ht;
-			tot_hum=tot_hum/cnt_ht;
-			cnt_ht=1.00;
-		}
-		
-        /* Schedule the next wake-up alarm */
-        _prepare_next_alarm();
-    }
-    /* this should never be reached */
+	
+	cnt_ht++;//Compte le nombre de mesure pour réaliser la moyenne 
+	if(cnt_ht >= 10.00) 
+	{
+		/* Au bout de 10 cycle de mesure, on fait la moyenne car 
+		risque d'overflow du type float */
+		tot_temp=tot_temp/cnt_ht;
+		tot_hum=tot_hum/cnt_ht;
+		cnt_ht=1.00;
+	}
+	
+    /* Schedule the next wake-up alarm */
+    _prepare_next_alarm();
+    
     return NULL;
 }
 #endif
