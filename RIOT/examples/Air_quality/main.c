@@ -14,7 +14,7 @@
  * @brief       Example demonstrating the use of LoRaWAN with RIOT
  *
  * @author      Alexandre Abadie <alexandre.abadie@inria.fr>
- *				Lucas TREVELOT
+ *				Lucas TREVELOT 	 <Polytech Grenoble>
  *
  * @}
  */
@@ -57,35 +57,33 @@
 
 #define RECV_MSG_QUEUE                   (4U)
 
-static kernel_pid_t sender_pid;
-static char sender_stack[THREAD_STACKSIZE_MAIN / 2];
+kernel_pid_t sender_pid;
+char sender_stack[THREAD_STACKSIZE_SMALL];
 
 #if CHOIX_CAPTEUR_PARTICULE == 0
 //Pas de capteur de particule
 #else
 #define PARTICULE_MSG_QUEUE                   (4U)
-static kernel_pid_t particule_pid;
-static char particule_stack[THREAD_STACKSIZE_SMALL];
+kernel_pid_t particule_pid;
+char particule_stack[THREAD_STACKSIZE_SMALL];
 #endif
 
 #if CHOIX_CAPTEUR_HT == 0
 //Pas de capteur de temperature/humidite
 #else
 #define HT_MSG_QUEUE                   (4U)
-static kernel_pid_t ht_pid;
-static char ht_stack[THREAD_STACKSIZE_SMALL];
+kernel_pid_t ht_pid;
+char ht_stack[THREAD_STACKSIZE_SMALL];
 #endif
 
-/* Messages are sent every 1000s to respect the duty cycle on each channel */
-//#define PERIOD              (120U)
 #define PUT_TO_QUERY_MODE_RETRIES                (3U)
 #define PUT_TO_QUERY_MODE_RETRY_TIMEOUT_MS       (100U)
 
 semtech_loramac_t loramac;
 
-static uint8_t deveui[LORAMAC_DEVEUI_LEN];
-static uint8_t appeui[LORAMAC_APPEUI_LEN];
-static uint8_t appkey[LORAMAC_APPKEY_LEN];
+static uint8_t deveui[LORAMAC_DEVEUI_LEN]; //Configuré dans le Makefile
+static uint8_t appeui[LORAMAC_APPEUI_LEN]; //Configuré dans le Makefile
+static uint8_t appkey[LORAMAC_APPKEY_LEN]; //Configuré dans le Makefile
 
 #if CHOIX_CAPTEUR_PARTICULE == 1 
 static sds011_t dev_sds011;
@@ -124,6 +122,10 @@ float tot_pm10=0.00; //Stock la somme des mesures pour pm10
 #if CHOIX_CAPTEUR_PARTICULE == 2
 float tot_pm1=0.00; //Stock la somme des mesures pour pm1, uniquement pour le pms7003
 #endif
+
+/*Pour éviter que le programme s'arrête (surement à cause des threads mais pas sûr)
+mise en place d'une variable qui va compter le nombre de cycle d'envoi via lora avant de redémarrer la carte */
+float cnt_cycle=0;
 
 /*********************************** Prototype ****************************************/
 
@@ -282,13 +284,11 @@ int main(void)
     puts("Join procedure succeeded");
     LED3_OFF; //LED Rouge
     
-
     /* start the sender thread */
-    sender_pid = thread_create(sender_stack, sizeof(sender_stack),THREAD_PRIORITY_MAIN - 2, 0, sender, NULL, "sender");
+    sender_pid = thread_create(sender_stack, sizeof(sender_stack),THREAD_PRIORITY_MAIN, 0, sender, NULL, "sender");
     
     return 0;
 }
-
 
 
 
@@ -352,7 +352,7 @@ static void Traitement_SDS011(void)
 		msg_receive(&sds011_msg);//msg_send par la fonction measure_cb quand il a recu une valeur
 		data.pm_10 = sds011_msg.content.value >> 16;
 		data.pm_2_5 = sds011_msg.content.value & 0xFFFF;
-		//LED2_TOGGLE; //LED bleue clignote
+		LED2_TOGGLE; //LED bleue clignote
     }
     /* enregistre 10 autres mesure mtn que le ventilateur a bien tourner */
     for(unsigned msg_cnt = 0; msg_cnt < 10; msg_cnt++){
@@ -361,7 +361,7 @@ static void Traitement_SDS011(void)
 		moy_pm10+=data.pm_10;//Stock les valeurs de pm10
 		data.pm_2_5 = sds011_msg.content.value & 0xFFFF;
 		moy_pm2_5+=data.pm_2_5;//Stock les valeurs de pm2.5
-		//LED2_TOGGLE; //LED bleue clignote
+		LED2_TOGGLE; //LED bleue clignote
     }
     //puts("[FIN MESSAGE]");
 	
@@ -379,9 +379,14 @@ static void Traitement_SDS011(void)
        
     _print_measurement_sds011(moy_pm10,moy_pm2_5);//Affichage dans le terminal
 }
+
 #elif CHOIX_CAPTEUR_PARTICULE == 2
 void measure_cb_pm_standard(pms7003_data_t *data, void *ctx)
 {
+    /* Fonction d'interruption de l'UART
+	* Retourne les valeurs du capteur particule
+	*/
+    
     msg_t msg1 = { .content.value = (((uint32_t)data->pm_10) << 16 | data->pm_2_5) };
     msg_t msg2 = { .content.value = (((uint32_t)data->pm_1 )& 0xFFFF)};
 
@@ -546,14 +551,25 @@ static void rtc_cb(void *arg)
     cnt_Lora_PERIOD+=PERIOD;
     cnt_particule_PERIOD+=PERIOD;
     cnt_ht_PERIOD+=PERIOD;
+    
+    if(cnt_cycle == 300) //Valeur max de cycle = 120
+    {
+    	pm_reboot(); //Redemarre la carte
+   	}
+   	else
+   	{
+   		cnt_cycle++; //Ajoute +1 à cnt_cycle
+   	}
    
    	if(cnt_Lora_PERIOD >= Lora_PERIOD)
    	{
    		cnt_particule_PERIOD=0;
     	cnt_ht_PERIOD=0;
     	cnt_Lora_PERIOD=0;
+    	/* kill the thread */
+    	thread_kill_zombie(sender_pid);
     	/* start the sender thread */
-   		sender_pid = thread_create(sender_stack, sizeof(sender_stack),THREAD_PRIORITY_MAIN - 2, 0, sender, NULL, "sender");
+   		sender_pid = thread_create(sender_stack, sizeof(sender_stack),THREAD_PRIORITY_MAIN, 0, sender, NULL, "sender");
    	}
     else if((cnt_particule_PERIOD >= particule_PERIOD)&&(cnt_ht_PERIOD >= ht_PERIOD))
     {
@@ -561,7 +577,9 @@ static void rtc_cb(void *arg)
     	cnt_ht_PERIOD=0;
     	#if CHOIX_CAPTEUR_PARTICULE == 0
 	 	//Pas de capteur de particule
-	 	#else 
+	 	#else
+	 	/* kill the thread */
+	 	thread_kill_zombie(particule_pid);
 		/* start the particule thread */
 		particule_pid = thread_create(particule_stack, sizeof(particule_stack),THREAD_PRIORITY_MAIN - 1, 0, _particule, NULL, "capteur_particule");
 		#endif
@@ -569,8 +587,10 @@ static void rtc_cb(void *arg)
 		#if CHOIX_CAPTEUR_HT == 0
 		//Pas de capteur de temperature/humidite
 		#else
+		/* kill the thread */
+		thread_kill_zombie(ht_pid);
 		/* start the ht thread */
-		ht_pid = thread_create(ht_stack, sizeof(ht_stack),THREAD_PRIORITY_MAIN, 0, _ht, NULL, "capteur_ht");
+		ht_pid = thread_create(ht_stack, sizeof(ht_stack),THREAD_PRIORITY_MAIN + 1, 0, _ht, NULL, "capteur_ht");
 		#endif
     }
     else if(cnt_particule_PERIOD >= particule_PERIOD)
@@ -578,7 +598,9 @@ static void rtc_cb(void *arg)
     	cnt_particule_PERIOD=0;
     	#if CHOIX_CAPTEUR_PARTICULE == 0
 	 	//Pas de capteur de particule
-	 	#else 
+	 	#else
+	 	/* kill the thread */
+	 	thread_kill_zombie(particule_pid);
 		/* start the particule thread */
 		particule_pid = thread_create(particule_stack, sizeof(particule_stack),THREAD_PRIORITY_MAIN - 1, 0, _particule, NULL, "capteur_particule");
 		#endif
@@ -589,15 +611,16 @@ static void rtc_cb(void *arg)
     	#if CHOIX_CAPTEUR_HT == 0
 		//Pas de capteur de temperature/humidite
 		#else
+		/* kill the thread */
+		thread_kill_zombie(ht_pid);
 		/* start the ht thread */
-		ht_pid = thread_create(ht_stack, sizeof(ht_stack),THREAD_PRIORITY_MAIN, 0, _ht, NULL, "capteur_ht");
+		ht_pid = thread_create(ht_stack, sizeof(ht_stack),THREAD_PRIORITY_MAIN + 1, 0, _ht, NULL, "capteur_ht");
 		#endif
     }
     else
     {
     	_prepare_next_alarm();
     }
-    //printf("PERIOD = %d\ncnt_Lora_PERIOD = %d\ncnt_particule_PERIOD = %d\ncnt_ht_PERIOD = %d\n",PERIOD,cnt_Lora_PERIOD,cnt_particule_PERIOD,cnt_ht_PERIOD);
 }
 
 static void _prepare_next_alarm(void)
@@ -638,7 +661,7 @@ static void _prepare_next_alarm(void)
     time.tm_sec += PERIOD;
     mktime(&time);
     rtc_set_alarm(&time, rtc_cb, NULL);
-    pm_set_lowest();
+    pm_set_lowest(); //Set the Low Power mode 
 }
 
 static void _send_message(void)
@@ -687,6 +710,8 @@ static void *sender(void *arg)
     cayenne_lpp_add_temperature(&lpp,3,tot_temp/cnt_ht); //Affichage Temperature
     cayenne_lpp_add_relative_humidity(&lpp,4,tot_hum/cnt_ht);// Humidite
     #endif
+    
+    cayenne_lpp_add_temperature(&lpp,5,cnt_cycle); // Test: à supprimer
     	
     #if CHOIX_CAPTEUR_PARTICULE == 2
     cayenne_lpp_add_temperature(&lpp,5,tot_pm1/cnt_particule); // Pour pm1
@@ -716,7 +741,9 @@ static void *sender(void *arg)
         
     #if CHOIX_CAPTEUR_PARTICULE == 0
 	//Pas de capteur de particule
-	#else 
+	#else
+	/* kill the thread */
+	thread_kill_zombie(particule_pid);
 	/* start the particule thread */
 	particule_pid = thread_create(particule_stack, sizeof(particule_stack),THREAD_PRIORITY_MAIN - 1, 0, _particule, NULL, "capteur_particule");
 	#endif
@@ -724,8 +751,10 @@ static void *sender(void *arg)
 	#if CHOIX_CAPTEUR_HT == 0
 	//Pas de capteur de temperature/humidite
 	#else
+	/* kill the thread */
+	thread_kill_zombie(ht_pid);
 	/* start the ht thread */
-	ht_pid = thread_create(ht_stack, sizeof(ht_stack),THREAD_PRIORITY_MAIN, 0, _ht, NULL, "capteur_ht");
+	ht_pid = thread_create(ht_stack, sizeof(ht_stack),THREAD_PRIORITY_MAIN + 1, 0, _ht, NULL, "capteur_ht");
 	#endif
 		
 	/* Schedule the next wake-up alarm */
@@ -733,6 +762,9 @@ static void *sender(void *arg)
         
     /* LED Verte off */
     LED1_OFF;
+    
+    /* Puts the current thread into zombie state */
+    thread_zombify(); //Pour pouvoir fermer le processus
     
     return NULL;
 }
@@ -777,6 +809,9 @@ static void *_particule(void *arg)
     /* LED Bleue off */
     LED2_OFF;
     
+    /* Puts the current thread into zombie state */
+    thread_zombify(); //Pour pouvoir fermer le processus
+    
     return NULL;
 }
 #endif
@@ -815,6 +850,9 @@ static void *_ht(void *arg)
 	
     /* Schedule the next wake-up alarm */
     _prepare_next_alarm();
+    
+    /* Puts the current thread into zombie state */
+    thread_zombify(); //Pour pouvoir fermer le processus
     
     return NULL;
 }
