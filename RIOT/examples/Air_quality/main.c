@@ -112,8 +112,8 @@ uint16_t cnt_particule_PERIOD=0; //Pareil que cnt_Lora_PERIOD mais pour le capte
 
 uint16_t PERIOD=0;/* Stock la valeur de la plus petite période entre le capteur ht et le capteur particule, donc PERIOD = PERIOD_HT ou PERIOD_PARTICULE ou la valeur absolue de la différence entre PERIOD_HT et PERIOD_PARTICULE si < PERIOD minimale*/
 
-float cnt_ht=0.00; //compte le nombre de fois que le traitement du capteur ht est effectué pendant la durée de 1 Lora_PERIOD
-float cnt_particule=0.00; // pareil que cnt_ht mais pour le sds011 ou le pms7003
+float cnt_ht=1.00; //compte le nombre de fois que le traitement du capteur ht est effectué pendant la durée de 1 Lora_PERIOD
+float cnt_particule=1.00; // pareil que cnt_ht mais pour le sds011 ou le pms7003
 
 float tot_temp=0.00; //Stock la somme des mesures pour la temperature
 float tot_hum=0.00; //Stock la somme des mesures pour l'humidité
@@ -283,6 +283,19 @@ int main(void)
     }
     puts("Join procedure succeeded");
     LED3_OFF; //LED Rouge
+    LED1_ON; //LED Verte
+    
+    #if CHOIX_CAPTEUR_HT == 1
+	Traitement_DHT22();
+	#elif CHOIX_CAPTEUR_HT == 2
+	Traitement_BME280();
+	#endif
+    
+    #if CHOIX_CAPTEUR_PARTICULE == 1
+	Traitement_SDS011();
+	#elif CHOIX_CAPTEUR_PARTICULE == 2
+	Traitement_PMS7003();
+	#endif
     
     /* start the sender thread */
     sender_pid = thread_create(sender_stack, sizeof(sender_stack),THREAD_PRIORITY_MAIN, 0, sender, NULL, "sender");
@@ -552,7 +565,7 @@ static void rtc_cb(void *arg)
     cnt_particule_PERIOD+=PERIOD;
     cnt_ht_PERIOD+=PERIOD;
     
-    if(cnt_cycle == 300) //Valeur max de cycle = 120
+    if(cnt_cycle >= 120) //Valeur max de cycle = 126
     {
     	pm_reboot(); //Redemarre la carte
    	}
@@ -567,7 +580,10 @@ static void rtc_cb(void *arg)
     	cnt_ht_PERIOD=0;
     	cnt_Lora_PERIOD=0;
     	/* kill the thread */
-    	thread_kill_zombie(sender_pid);
+    	if(thread_kill_zombie(sender_pid) != 1)
+		{
+			puts("[ERROR]: kill thread _sender");
+		}
     	/* start the sender thread */
    		sender_pid = thread_create(sender_stack, sizeof(sender_stack),THREAD_PRIORITY_MAIN, 0, sender, NULL, "sender");
    	}
@@ -579,7 +595,10 @@ static void rtc_cb(void *arg)
 	 	//Pas de capteur de particule
 	 	#else
 	 	/* kill the thread */
-	 	thread_kill_zombie(particule_pid);
+	 	if(thread_kill_zombie(particule_pid) != 1)
+		{
+			puts("[ERROR]: kill thread _particule");
+		}
 		/* start the particule thread */
 		particule_pid = thread_create(particule_stack, sizeof(particule_stack),THREAD_PRIORITY_MAIN - 1, 0, _particule, NULL, "capteur_particule");
 		#endif
@@ -588,7 +607,10 @@ static void rtc_cb(void *arg)
 		//Pas de capteur de temperature/humidite
 		#else
 		/* kill the thread */
-		thread_kill_zombie(ht_pid);
+		if(thread_kill_zombie(ht_pid) != 1)
+		{
+			puts("[ERROR]: kill thread _ht");
+		}
 		/* start the ht thread */
 		ht_pid = thread_create(ht_stack, sizeof(ht_stack),THREAD_PRIORITY_MAIN + 1, 0, _ht, NULL, "capteur_ht");
 		#endif
@@ -600,7 +622,10 @@ static void rtc_cb(void *arg)
 	 	//Pas de capteur de particule
 	 	#else
 	 	/* kill the thread */
-	 	thread_kill_zombie(particule_pid);
+	 	if(thread_kill_zombie(particule_pid) != 1)
+		{
+			puts("[ERROR]: kill thread _particule");
+		}
 		/* start the particule thread */
 		particule_pid = thread_create(particule_stack, sizeof(particule_stack),THREAD_PRIORITY_MAIN - 1, 0, _particule, NULL, "capteur_particule");
 		#endif
@@ -612,7 +637,10 @@ static void rtc_cb(void *arg)
 		//Pas de capteur de temperature/humidite
 		#else
 		/* kill the thread */
-		thread_kill_zombie(ht_pid);
+		if(thread_kill_zombie(ht_pid) != 1)
+		{
+			puts("[ERROR]: kill thread _ht");
+		}
 		/* start the ht thread */
 		ht_pid = thread_create(ht_stack, sizeof(ht_stack),THREAD_PRIORITY_MAIN + 1, 0, _ht, NULL, "capteur_ht");
 		#endif
@@ -711,10 +739,10 @@ static void *sender(void *arg)
     cayenne_lpp_add_relative_humidity(&lpp,4,tot_hum/cnt_ht);// Humidite
     #endif
     
-    cayenne_lpp_add_temperature(&lpp,5,cnt_cycle); // Test: à supprimer
+    cayenne_lpp_add_temperature(&lpp,5,cnt_cycle); // Indique le nombre de cycle effectué
     	
     #if CHOIX_CAPTEUR_PARTICULE == 2
-    cayenne_lpp_add_temperature(&lpp,5,tot_pm1/cnt_particule); // Pour pm1
+    cayenne_lpp_add_temperature(&lpp,6,tot_pm1/cnt_particule); // Pour pm1
    	#endif
 
 	/*************************** Important *****************************/
@@ -733,7 +761,7 @@ static void *sender(void *arg)
 	tot_hum=0.00;
 	#if CHOIX_CAPTEUR_PARTICULE == 2
 	tot_pm1=0.00;
-	#endif
+	#endif 
 
     /* Trigger the message send */
     puts("[SEND]");

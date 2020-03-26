@@ -36,10 +36,10 @@ Pas de capteur ==> #define CHOIX_CAPTEUR_HT		(0U)
 ----------------------------------------------*/
 
 // The frequency of transmission of datas	
-#define PERIOD_LORA			(60U)
+#define PERIOD_LORA			(900U) //Par défaut : 900U | Minimum : 60U
 // The sensor measurement period
-#define PERIOD_PARTICULE	(60U)
-#define PERIOD_HT			(60U)
+#define PERIOD_PARTICULE	(300U) //Par défaut : 900U | Minimum : 60U
+#define PERIOD_HT			(900U) //Par défaut : 900U | Minimum : 60U
 
 #endif /* CHOIX_CONFIG_H */
 
@@ -63,6 +63,7 @@ Pas de capteur ==> #define CHOIX_CAPTEUR_HT		(0U)
 //				SCK = D15
 /***********************************************************************/
     
+/**** A supprimer ****/
 //luftdaten.info
 
 //188mA
