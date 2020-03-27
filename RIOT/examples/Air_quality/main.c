@@ -296,6 +296,7 @@ int main(void)
 	#elif CHOIX_CAPTEUR_PARTICULE == 2
 	Traitement_PMS7003();
 	#endif
+	LED2_OFF; //LED Bleue
     
     /* start the sender thread */
     sender_pid = thread_create(sender_stack, sizeof(sender_stack),THREAD_PRIORITY_MAIN, 0, sender, NULL, "sender");

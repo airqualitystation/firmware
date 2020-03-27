@@ -62,15 +62,3 @@ Pas de capteur ==> #define CHOIX_CAPTEUR_HT		(0U)
 //				SDI = D14
 //				SCK = D15
 /***********************************************************************/
-    
-/**** A supprimer ****/
-//luftdaten.info
-
-//188mA
-//repos 77mA
-
-/* Grafana
-Port: 8086
-
-Juste pourcentage de la batterie
-*/
