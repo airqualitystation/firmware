@@ -60,3 +60,36 @@ You can compile the applications test and the Air_quality project in your board 
 
 `sudo chmod o+rw /dev/ttyACM0`
 
+##Installation RIOT OS on Linux Ubuntu
+
+Link reference: https://github.com/RIOT-OS/Tutorials
+
+We installed RIOT OS on our VM based on this tutorial: 
+
+Regular Setup without using a VM (recommended for RIOT developement)
+
+### 1.Install and set up git:
+https://help.github.com/en/github/getting-started-with-github/set-up-git
+
+### 2.Install the build-essential packet (make, gcc etc.). This varies based on the operating system in use:
+https://gist.github.com/jlblancoc/99521194aba975286c80f93e47966dc5?fbclid=IwAR0cidFCknn_Jmf3xxUnzpJDF3VnnsKofcqgJJwfb1-Z1zax49cKWRDELag
+
+### 3.Install Native dependencies:
+https://github.com/RIOT-OS/RIOT/wiki/Family:-native#dependencies
+
+### 4.Install OpenOCD:
+https://github.com/RIOT-OS/RIOT/wiki/OpenOCD
+
+### 5.Install GCC Arm Embedded Toolchain:
+https://launchpad.net/~team-gcc-arm-embedded/+archive/ubuntu/ppa
+
+### 6.Install netcat with IPv6 support (if necessary)
+
+sudo apt-get install netcat-openbsd
+
+### 7.git clone --recursive https://github.com/RIOT-OS/Tutorials
+
+### 8.Go to the Tutorials directory: cd Tutorials
+
+### 9.Install RIOT OS manual: 
+git clone https://github.com/RIOT-OS/RIOT.git
